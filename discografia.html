@@ -690,12 +690,12 @@ function App() {
   };
 
   const handleImport=guides=>{
-    const merged=saveLibrary([...libraryRef.current,...guides.filter(g=>!libraryRef.current.find(e=>e.id===g.id))]);
-    libraryRef.current=merged;
-    setLibrary(merged);
+    saveLibrary([...libraryRef.current,...guides.filter(g=>!libraryRef.current.find(e=>e.id===g.id))],ghTokenRef.current).then(merged=>{
+      libraryRef.current=merged; setLibrary(merged);
+    });
   };
 
-  if(showSetup) return <SetupScreen onSave={handleSetup}/>;
+  if(showSetup) return <SetupScreen onSave={handleSetup} initialGhToken={ghToken}/>;
   if(apiKey===null) return null;
 
   const isBuiltin=active.id==="builtin_bach_wtc";
