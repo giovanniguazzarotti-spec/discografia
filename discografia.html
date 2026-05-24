@@ -288,16 +288,10 @@ function Card({rec,expanded,onToggle,work}) {
               return <span key={i} style={{display:"inline-flex",gap:5}}>
                 {app&&<button
                   onClick={e=>{e.stopPropagation();e.preventDefault();window.open(app,"_blank","noopener,noreferrer");}}
-                  title="Apre l'app Qobuz"
-                  style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>
-                  🎵 App
-                </button>}
-                <button
-                  onClick={e=>{e.stopPropagation();e.preventDefault();window.open(web,"_blank","noopener,noreferrer");}}
-                  title="Apre il brano su Qobuz web"
+                  title="Apre il brano nell'app Qobuz"
                   style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>
                   💿 {q.label}
-                </button>
+                </button>}
               </span>;
             })}
             {(rec.reviews||[]).map((r,i)=>(
