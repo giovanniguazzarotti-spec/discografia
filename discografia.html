@@ -276,10 +276,10 @@ function Card({rec,expanded,onToggle,work}) {
           </div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
             {(rec.qobuz||[]).filter(q=>q.url).map((q,i)=>{
-              const appUrl=toOpenQobuz(q.url);
+              const {web}=toOpenQobuz(q.url);
               return <button key={i}
-                onClick={e=>{e.stopPropagation();e.preventDefault();window.open(appUrl,"_blank","noopener,noreferrer");}}
-                title="Apre nell'app Qobuz"
+                onClick={e=>{e.stopPropagation();e.preventDefault();window.open(web,"_blank","noopener,noreferrer");}}
+                title="Apre su Qobuz"
                 style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",display:"inline-flex",alignItems:"center",gap:5,cursor:"pointer"}}>
                 🎵 {q.label}<span style={{background:"#0e2a1a",border:"1px solid #1a5a30",borderRadius:3,padding:"1px 5px",fontSize:9,color:"#4acf7a"}}>apri app</span>
               </button>;
@@ -713,9 +713,4 @@ function App() {
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
-</html>const {web}=toOpenQobuz(q.url);
-              return <button key={i} onClick={e=>{
-                e.stopPropagation();e.preventDefault();
-                window.open(web,"_blank","noopener,noreferrer");
-              }}
-                
+</html>
