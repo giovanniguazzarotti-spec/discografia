@@ -284,19 +284,12 @@ function Card({rec,expanded,onToggle,work}) {
           </div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
             {(rec.qobuz||[]).filter(q=>q.url).map((q,i)=>{
-              const {app,web}=toOpenQobuz(q.url);
-              return <span key={i} style={{display:"inline-flex",gap:5}}>
-                {app&&<button
-                  onClick={e=>{e.stopPropagation();e.preventDefault();window.open(app,"_blank","noopener,noreferrer");}}
-                  style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>
-                  🎵 Apri app
-                </button>}
-                <button
-                  onClick={e=>{e.stopPropagation();e.preventDefault();window.open(web,"_blank","noopener,noreferrer");}}
-                  style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>
-                  💿 {q.label}
-                </button>
-              </span>;
+              const {app}=toOpenQobuz(q.url);
+              return app ? <button key={i}
+                onClick={e=>{e.stopPropagation();e.preventDefault();window.open(app,"_blank","noopener,noreferrer");}}
+                style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>
+                🎵 {q.label}
+              </button> : null;
             })}
             {(rec.reviews||[]).map((r,i)=>(
               <button key={i}
