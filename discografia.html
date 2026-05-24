@@ -36,68 +36,23 @@ const C = {
 };
 
 // ── STORAGE ───────────────────────────────────────────────────────────────────
-const LS_KEY="cdc_apikey_v1", LS_GH_TOKEN="cdc_gh_token_v1";
-const GH_USER="giovanniguazzarotti-spec", GH_REPO="discografia", GH_FILE="biblioteca.json";
-const GH_API=`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${GH_FILE}`;
-
+const LS_KEY="cdc_apikey_v1", LS_GH="cdc_gh_token_v1";
+const GH_USER="giovanniguazzarotti-spec",GH_REPO="discografia",GH_FILE="biblioteca.json";
+const GH_API="https://api.github.com/repos/"+GH_USER+"/"+GH_REPO+"/contents/"+GH_FILE;
 function loadApiKey(){try{return localStorage.getItem(LS_KEY)||"";}catch{return "";}}
 function saveApiKey(k){try{localStorage.setItem(LS_KEY,k);}catch{}}
-function loadGhToken(){try{return localStorage.getItem(LS_GH_TOKEN)||"";}catch{return "";}}
-function saveGhToken(k){try{localStorage.setItem(LS_GH_TOKEN,k);}catch{}}
-
-function sanitizeLib(lib){
-  return lib.slice(-200).map(e=>({...e,recordings:(e.recordings||[]).map(r=>({
-    ...r,execNote:(r.execNote||"").slice(0,300),recNote:(r.recNote||"").slice(0,300),
-    criticalNote:(r.criticalNote||"").slice(0,500),qobuz:(r.qobuz||[]).slice(0,4),reviews:(r.reviews||[]).slice(0,4),
-  }))}));
-}
-
-// Legge biblioteca.json da GitHub
-async function loadLibrary(ghToken){
-  try {
-    const headers={"Accept":"application/vnd.github.v3+json"};
-    if(ghToken) headers["Authorization"]="token "+ghToken;
-    const r=await fetch(GH_API,{headers});
-    if(!r.ok) return [];
-    const data=await r.json();
-    const decoded=atob(data.content.replace(/
-/g,""));
-    return JSON.parse(decoded);
-  } catch(e){console.error("loadLibrary:",e);return [];}
-}
-
-// Salva biblioteca.json su GitHub (crea o aggiorna)
-async function saveLibrary(lib, ghToken){
-  const safe=sanitizeLib(lib);
-  if(!ghToken) return safe; // senza token salva solo in memoria
-  try {
-    const headers={"Accept":"application/vnd.github.v3+json","Content-Type":"application/json","Authorization":"token "+ghToken};
-    // Recupera SHA del file esistente (necessario per aggiornarlo)
-    let sha=null;
-    try {
-      const r=await fetch(GH_API,{headers});
-      if(r.ok){const d=await r.json();sha=d.sha;}
-    } catch{}
-    const body={message:"Aggiornamento biblioteca",content:btoa(unescape(encodeURIComponent(JSON.stringify(safe))))};
-    if(sha) body.sha=sha;
-    await fetch(GH_API,{method:"PUT",headers,body:JSON.stringify(body)});
-  } catch(e){console.error("saveLibrary:",e);}
-  return safe;
-}
+function loadGhToken(){try{return localStorage.getItem(LS_GH)||"";}catch{return "";}}
+function saveGhToken(k){try{localStorage.setItem(LS_GH,k);}catch{}}
+function sanitize(lib){return lib.slice(-200).map(e=>({...e,recordings:(e.recordings||[]).map(r=>({...r,execNote:(r.execNote||"").slice(0,300),recNote:(r.recNote||"").slice(0,300),criticalNote:(r.criticalNote||"").slice(0,500),qobuz:(r.qobuz||[]).slice(0,4),reviews:(r.reviews||[]).slice(0,4)}))}));}
+async function ghLoad(tok){try{const r=await fetch(GH_API,{headers:{"Accept":"application/vnd.github.v3+json","Authorization":"token "+tok}});if(!r.ok)return null;const d=await r.json();return JSON.parse(atob(d.content.replace(/
+/g,"")));}catch{return null;}}
+async function ghSave(lib,tok){if(!tok)return;try{let sha=null;try{const r=await fetch(GH_API,{headers:{"Accept":"application/vnd.github.v3+json","Authorization":"token "+tok}});if(r.ok)sha=(await r.json()).sha;}catch{}const body={message:"Biblioteca aggiornata",content:btoa(unescape(encodeURIComponent(JSON.stringify(lib))))};if(sha)body.sha=sha;await fetch(GH_API,{method:"PUT",headers:{"Accept":"application/vnd.github.v3+json","Content-Type":"application/json","Authorization":"token "+tok},body:JSON.stringify(body)});}catch(e){console.error(e);}}
 
 // ── QOBUZ LINK ────────────────────────────────────────────────────────────────
 function toOpenQobuz(url) {
   if(!url) return null;
-  try {
-    const u=new URL(url);
-    const p=u.pathname.split("/").filter(Boolean);
-    const id=p[p.length-1];
-    return {
-      app: id ? "https://open.qobuz.com/album/"+id : null,
-      web: "https://www.qobuz.com"+u.pathname,
-    };
-  }
-  catch{return {app:null, web:url};}
+  try { const u=new URL(url); const p=u.pathname.split("/").filter(Boolean); const id=p[p.length-1]; return id?`https://open.qobuz.com/album/${id}`:url; }
+  catch{return url;}
 }
 
 // ── EXPORT / IMPORT ───────────────────────────────────────────────────────────
@@ -117,7 +72,7 @@ function exportLibrary(library, entries) {
       lines.push("     Esec: "+st(rec.execStars||0)+"  Reg: "+st(rec.recStars||0));
       if(rec.execNote)lines.push("     "+rec.execNote);
       if(rec.criticalNote)lines.push("     "+rec.criticalNote);
-      const ql=(rec.qobuz||[]).filter(q=>q.url).map(q=>{try{const u=new URL(q.url);const p=u.pathname.split("/").filter(Boolean);return "https://www.qobuz.com/album/"+p[p.length-1];}catch{return q.url;}});
+      const ql=(rec.qobuz||[]).filter(q=>q.url).map(q=>{try{const u=new URL(q.url);const p=u.pathname.split("/").filter(Boolean);return "https://open.qobuz.com/album/"+p[p.length-1];}catch{return q.url;}});
       if(ql.length)lines.push("     Qobuz: "+ql.join(" | "));
       lines.push("");
     });
@@ -236,8 +191,8 @@ function SetupScreen({onSave}) {
       <div style={{maxWidth:520,width:"100%"}}>
         <div style={{textAlign:"center",marginBottom:32}}>
           <div style={{color:C.gold,fontSize:10,letterSpacing:3,textTransform:"uppercase",marginBottom:12}}>Critica Discografica Specializzata</div>
-          <h1 style={{color:C.cream,fontWeight:400,fontSize:26,marginBottom:8}}>Configurazione</h1>
-          <p style={{color:C.mid,fontSize:13,lineHeight:1.7}}>Inserisci le chiavi per abilitare ricerca AI e salvataggio biblioteca su GitHub.</p>
+          <h1 style={{color:C.cream,fontWeight:400,fontSize:26,marginBottom:8}}>Configurazione chiave API</h1>
+          <p style={{color:C.mid,fontSize:13,lineHeight:1.7}}>Per usare la ricerca AI inserisci la tua chiave API Anthropic.<br/>Puoi usare l'app anche senza — i dati Bach precaricati sono sempre disponibili.</p>
         </div>
         <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:24,marginBottom:16}}>
           <label style={{color:C.muted,fontSize:10,letterSpacing:1.5,textTransform:"uppercase",display:"block",marginBottom:8}}>Chiave API Anthropic</label>
@@ -247,16 +202,14 @@ function SetupScreen({onSave}) {
               style={{flex:1,background:"#0a0806",border:`1px solid ${C.faint}`,color:C.cream,padding:"10px 12px",borderRadius:4,fontSize:13,outline:"none"}}/>
             <button onClick={()=>setShow(!show)} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"0 12px",borderRadius:4,fontSize:12,cursor:"pointer"}}>{show?"Nascondi":"Mostra"}</button>
           </div>
-          <div style={{marginBottom:16}}>
-            <label style={{color:C.muted,fontSize:10,letterSpacing:1.5,textTransform:"uppercase",display:"block",marginBottom:8}}>GitHub Token (per salvare la biblioteca)</label>
-            <div style={{display:"flex",gap:8}}>
-              <input type={show?"text":"password"} value={ghToken} onChange={e=>setGhToken(e.target.value)} placeholder="ghp_..."
-                style={{flex:1,background:"#0a0806",border:`1px solid ${C.faint}`,color:C.cream,padding:"10px 12px",borderRadius:4,fontSize:13,outline:"none"}}/>
-            </div>
-            <div style={{color:"#3a5a3a",fontSize:10,marginTop:5,lineHeight:1.5}}>Crea su github.com → Settings → Developer settings → Personal access tokens → Tokens (classic) → repo</div>
+          <div style={{marginBottom:14}}>
+            <label style={{color:C.muted,fontSize:10,letterSpacing:1.5,textTransform:"uppercase",display:"block",marginBottom:6}}>GitHub Token (per salvare biblioteca)</label>
+            <input type="password" value={gh} onChange={e=>setGh(e.target.value)} placeholder="ghp_..."
+              style={{width:"100%",background:"#0a0806",border:`1px solid ${C.faint}`,color:C.cream,padding:"9px 12px",borderRadius:4,fontSize:12,outline:"none"}}/>
+            <div style={{color:"#3a5a3a",fontSize:10,marginTop:4}}>Opzionale — platform.github.com → Settings → Developer settings → Personal access tokens → repo</div>
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>key.trim()&&onSave(key.trim(),ghToken.trim())} disabled={!key.trim()} style={{flex:1,background:key.trim()?C.gold:"#2a2520",color:key.trim()?"#0f0d09":"#555",border:"none",borderRadius:4,padding:"10px",fontSize:14,fontWeight:700,cursor:key.trim()?"pointer":"not-allowed"}}>Salva e apri l'app</button>
+            <button onClick={()=>key.trim()&&onSave(key.trim(),gh.trim())} disabled={!key.trim()} style={{flex:1,background:key.trim()?C.gold:"#2a2520",color:key.trim()?"#0f0d09":"#555",border:"none",borderRadius:4,padding:"10px",fontSize:14,fontWeight:700,cursor:key.trim()?"pointer":"not-allowed"}}>Salva e apri l'app</button>
             <button onClick={()=>onSave("","")} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"10px 16px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Salta (solo Bach)</button>
           </div>
         </div>
@@ -325,12 +278,13 @@ function Card({rec,expanded,onToggle,work}) {
           </div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
             {(rec.qobuz||[]).filter(q=>q.url).map((q,i)=>{
-              const {app}=toOpenQobuz(q.url);
-              return app ? <button key={i}
-                onClick={e=>{e.stopPropagation();e.preventDefault();window.open(app,"_blank","noopener,noreferrer");}}
-                style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>
-                🎵 {q.label}
-              </button> : null;
+              const appUrl=toOpenQobuz(q.url);
+              return <button key={i}
+                onClick={e=>{e.stopPropagation();e.preventDefault();window.open(appUrl,"_blank","noopener,noreferrer");}}
+                title="Apre nell'app Qobuz"
+                style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",display:"inline-flex",alignItems:"center",gap:5,cursor:"pointer"}}>
+                🎵 {q.label}<span style={{background:"#0e2a1a",border:"1px solid #1a5a30",borderRadius:3,padding:"1px 5px",fontSize:9,color:"#4acf7a"}}>apri app</span>
+              </button>;
             })}
             {(rec.reviews||[]).map((r,i)=>(
               <button key={i}
@@ -626,32 +580,17 @@ function App() {
   const [expanded,setExpanded]=useState(null);
   const [showLib,setShowLib]=useState(false);
   const [flash,setFlash]=useState(false);
-  const [syncStatus,setSyncStatus]=useState(null);
-  const libraryRef=useRef([]);
-  const ghTokenRef=useRef("");
+  const [syncing,setSyncing]=useState(false);
+  const libRef=useRef([]);
+  const ghRef=useRef("");
 
   useEffect(()=>{
-    const k=loadApiKey(); setApiKey(k);
-    const gh=loadGhToken(); setGhToken(gh); ghTokenRef.current=gh;
-    setShowSetup(!k);
-    // Carica biblioteca da GitHub se token disponibile, altrimenti localStorage
-    if(gh){
-      setSyncStatus("sync");
-      loadLibrary(gh).then(lib=>{
-        setLibrary(lib); libraryRef.current=lib; setSyncStatus(null);
-      }).catch(()=>setSyncStatus(null));
-    }
+    const k=loadApiKey(); setApiKey(k); setShowSetup(!k);
+    const gh=loadGhToken(); setGhToken(gh); ghRef.current=gh;
+    if(gh){setSyncing(true);ghLoad(gh).then(lib=>{if(lib){setLibrary(lib);libRef.current=lib;}setSyncing(false);});}
   },[]);
 
-  const handleSetup=(k,gh)=>{
-    saveApiKey(k); setApiKey(k);
-    saveGhToken(gh); setGhToken(gh); ghTokenRef.current=gh;
-    setShowSetup(false);
-    if(gh){
-      setSyncStatus("sync");
-      loadLibrary(gh).then(lib=>{setLibrary(lib);libraryRef.current=lib;setSyncStatus(null);});
-    }
-  };
+  const handleSetup=(k,gh)=>{saveApiKey(k);setApiKey(k);saveGhToken(gh||"");setGhToken(gh||"");ghRef.current=gh||"";setShowSetup(false);if(gh){setSyncing(true);ghLoad(gh).then(lib=>{if(lib){setLibrary(lib);libRef.current=lib;}setSyncing(false);});}};
 
   const handleResults=useCallback(data=>{
     const now=new Date().toLocaleDateString("it-IT",{day:"2-digit",month:"short",year:"numeric"});
@@ -674,28 +613,27 @@ function App() {
       }),
     };
     setActive(entry);setExpanded(null);
-    setSyncStatus("saving");
-    saveLibrary([...libraryRef.current,entry],ghTokenRef.current).then(updated=>{
-      libraryRef.current=updated; setLibrary(updated);
-      setSyncStatus(null); setFlash(true); setTimeout(()=>setFlash(false),2500);
-    });
+    // Use ref to always have current library value, avoiding stale closure
+    const updated=sanitize([...libRef.current,entry]);
+    libRef.current=updated; setLibrary(updated);
+    setFlash(true); setTimeout(()=>setFlash(false),2500);
+    ghSave(updated,ghRef.current);
   },[]);
 
   const handleDelete=id=>{
-    setSyncStatus("saving");
-    saveLibrary(libraryRef.current.filter(e=>e.id!==id),ghTokenRef.current).then(updated=>{
-      libraryRef.current=updated; setLibrary(updated); setSyncStatus(null);
-      if(active.id===id)setActive(BUILTIN);
-    });
+    const updated=sanitize(libRef.current.filter(e=>e.id!==id));
+    libRef.current=updated; setLibrary(updated);
+    if(active.id===id)setActive(BUILTIN);
+    ghSave(updated,ghRef.current);
   };
 
   const handleImport=guides=>{
-    saveLibrary([...libraryRef.current,...guides.filter(g=>!libraryRef.current.find(e=>e.id===g.id))],ghTokenRef.current).then(merged=>{
-      libraryRef.current=merged; setLibrary(merged);
-    });
+    const merged=saveLibrary([...libRef.current,...guides.filter(g=>!libRef.current.find(e=>e.id===g.id))]);
+    libRef.current=merged;
+    setLibrary(merged);
   };
 
-  if(showSetup) return <SetupScreen onSave={handleSetup} initialGhToken={ghToken}/>;
+  if(showSetup) return <SetupScreen onSave={handleSetup} initGh={ghToken}/>;
   if(apiKey===null) return null;
 
   const isBuiltin=active.id==="builtin_bach_wtc";
@@ -720,9 +658,10 @@ function App() {
                 </button>
               </div>
               {flash&&<span className="flash" style={{color:C.green,fontSize:10}}>✓ Salvata</span>}
-              {apiKey&&<span onClick={()=>setShowSetup(true)} style={{color:"#4a8a5a",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",marginTop:6,display:"block"}}>🔑 API configurata {ghToken?"· 📂 GitHub":"· ⚠️ no GitHub"}</span>}
-              {syncStatus==="saving"&&<span style={{color:C.gold,fontSize:9,marginTop:3,display:"block"}}>💾 Salvataggio…</span>}
-              {syncStatus==="sync"&&<span style={{color:C.gold,fontSize:9,marginTop:3,display:"block"}}>🔄 Sincronizzazione…</span>}
+              {apiKey&&<span onClick={()=>setShowSetup(true)} style={{color:"#4a8a5a",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",marginTop:6,display:"block"}}>
+                🔑 API configurata {ghToken?"· 📂 GitHub":"· ⚠️ no GitHub"}
+              </span>}
+              {syncing&&<span style={{color:C.gold,fontSize:9,marginTop:2,display:"block"}}>🔄 Sincronizzazione…</span>}
             </div>
           </div>
         </div>
@@ -782,21 +721,7 @@ function App() {
   );
 }
 
-class ErrorBoundary extends React.Component {
-  constructor(props){super(props);this.state={error:null};}
-  static getDerivedStateFromError(e){return {error:e};}
-  render(){
-    if(this.state.error) return (
-      <div style={{padding:20,color:"#f0ead6",background:"#1a0000",minHeight:"100vh",fontFamily:"monospace",fontSize:12}}>
-        <div style={{color:"#c96060",fontSize:16,marginBottom:12}}>⚠️ Errore di avvio</div>
-        <div style={{color:"#ff9999",lineHeight:1.7,wordBreak:"break-all"}}>{this.state.error.toString()}</div>
-        <div style={{color:"#666",marginTop:16,fontSize:10}}>Copia questo testo e mandalo a Claude per la diagnosi.</div>
-      </div>
-    );
-    return this.props.children;
-  }
-}
-ReactDOM.createRoot(document.getElementById("root")).render(<ErrorBoundary><App/></ErrorBoundary>);
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
 </html>
