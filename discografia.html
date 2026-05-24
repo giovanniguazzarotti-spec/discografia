@@ -55,7 +55,13 @@ function saveApiKey(k) { localStorage.setItem(LS_KEY,k); }
 // ── QOBUZ LINK ────────────────────────────────────────────────────────────────
 function toOpenQobuz(url) {
   if(!url) return null;
-  try { const u=new URL(url); return {web:"https://www.qobuz.com"+u.pathname}; }
+  try {
+    const u=new URL(url);
+    const p=u.pathname.split("/").filter(Boolean);
+    const id=p[p.length-1];
+    // open.qobuz.com è il dominio Universal Link ufficiale — apre l'app su Android e iOS
+    return {web: id ? "https://open.qobuz.com/album/"+id : "https://www.qobuz.com"+u.pathname};
+  }
   catch{return {web:url};}
 }
 
