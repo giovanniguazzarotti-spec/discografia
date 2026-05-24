@@ -36,21 +36,54 @@ const C = {
 };
 
 // ── STORAGE ───────────────────────────────────────────────────────────────────
-const LS_LIB = "cdc_library_v1", LS_KEY = "cdc_apikey_v1";
-function loadLibrary() { try { return JSON.parse(localStorage.getItem(LS_LIB)||"[]"); } catch{return[];} }
-function saveLibrary(lib) {
-  try {
-    const safe = lib.slice(-200).map(e=>({...e, recordings:(e.recordings||[]).map(r=>({
-      ...r, execNote:(r.execNote||"").slice(0,300), recNote:(r.recNote||"").slice(0,300),
-      criticalNote:(r.criticalNote||"").slice(0,500), qobuz:(r.qobuz||[]).slice(0,4), reviews:(r.reviews||[]).slice(0,4),
-    }))}));
-    const val=JSON.stringify(safe);
-    if(val.length>4500000) return saveLibrary(safe.slice(1));
-    localStorage.setItem(LS_LIB,val); return safe;
-  } catch(e){console.error(e);return lib;}
+const LS_KEY="cdc_apikey_v1", LS_GH_TOKEN="cdc_gh_token_v1";
+const GH_USER="giovanniguazzarotti-spec", GH_REPO="discografia", GH_FILE="biblioteca.json";
+const GH_API=`https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${GH_FILE}`;
+
+function loadApiKey(){try{return localStorage.getItem(LS_KEY)||"";}catch{return "";}}
+function saveApiKey(k){try{localStorage.setItem(LS_KEY,k);}catch{}}
+function loadGhToken(){try{return localStorage.getItem(LS_GH_TOKEN)||"";}catch{return "";}}
+function saveGhToken(k){try{localStorage.setItem(LS_GH_TOKEN,k);}catch{}}
+
+function sanitizeLib(lib){
+  return lib.slice(-200).map(e=>({...e,recordings:(e.recordings||[]).map(r=>({
+    ...r,execNote:(r.execNote||"").slice(0,300),recNote:(r.recNote||"").slice(0,300),
+    criticalNote:(r.criticalNote||"").slice(0,500),qobuz:(r.qobuz||[]).slice(0,4),reviews:(r.reviews||[]).slice(0,4),
+  }))}));
 }
-function loadApiKey() { return localStorage.getItem(LS_KEY)||""; }
-function saveApiKey(k) { localStorage.setItem(LS_KEY,k); }
+
+// Legge biblioteca.json da GitHub
+async function loadLibrary(ghToken){
+  try {
+    const headers={"Accept":"application/vnd.github.v3+json"};
+    if(ghToken) headers["Authorization"]="token "+ghToken;
+    const r=await fetch(GH_API,{headers});
+    if(!r.ok) return [];
+    const data=await r.json();
+    const decoded=atob(data.content.replace(/
+/g,""));
+    return JSON.parse(decoded);
+  } catch(e){console.error("loadLibrary:",e);return [];}
+}
+
+// Salva biblioteca.json su GitHub (crea o aggiorna)
+async function saveLibrary(lib, ghToken){
+  const safe=sanitizeLib(lib);
+  if(!ghToken) return safe; // senza token salva solo in memoria
+  try {
+    const headers={"Accept":"application/vnd.github.v3+json","Content-Type":"application/json","Authorization":"token "+ghToken};
+    // Recupera SHA del file esistente (necessario per aggiornarlo)
+    let sha=null;
+    try {
+      const r=await fetch(GH_API,{headers});
+      if(r.ok){const d=await r.json();sha=d.sha;}
+    } catch{}
+    const body={message:"Aggiornamento biblioteca",content:btoa(unescape(encodeURIComponent(JSON.stringify(safe))))};
+    if(sha) body.sha=sha;
+    await fetch(GH_API,{method:"PUT",headers,body:JSON.stringify(body)});
+  } catch(e){console.error("saveLibrary:",e);}
+  return safe;
+}
 
 // ── QOBUZ LINK ────────────────────────────────────────────────────────────────
 function toOpenQobuz(url) {
@@ -203,8 +236,8 @@ function SetupScreen({onSave}) {
       <div style={{maxWidth:520,width:"100%"}}>
         <div style={{textAlign:"center",marginBottom:32}}>
           <div style={{color:C.gold,fontSize:10,letterSpacing:3,textTransform:"uppercase",marginBottom:12}}>Critica Discografica Specializzata</div>
-          <h1 style={{color:C.cream,fontWeight:400,fontSize:26,marginBottom:8}}>Configurazione chiave API</h1>
-          <p style={{color:C.mid,fontSize:13,lineHeight:1.7}}>Per usare la ricerca AI inserisci la tua chiave API Anthropic.<br/>Puoi usare l'app anche senza — i dati Bach precaricati sono sempre disponibili.</p>
+          <h1 style={{color:C.cream,fontWeight:400,fontSize:26,marginBottom:8}}>Configurazione</h1>
+          <p style={{color:C.mid,fontSize:13,lineHeight:1.7}}>Inserisci le chiavi per abilitare ricerca AI e salvataggio biblioteca su GitHub.</p>
         </div>
         <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:24,marginBottom:16}}>
           <label style={{color:C.muted,fontSize:10,letterSpacing:1.5,textTransform:"uppercase",display:"block",marginBottom:8}}>Chiave API Anthropic</label>
@@ -214,9 +247,17 @@ function SetupScreen({onSave}) {
               style={{flex:1,background:"#0a0806",border:`1px solid ${C.faint}`,color:C.cream,padding:"10px 12px",borderRadius:4,fontSize:13,outline:"none"}}/>
             <button onClick={()=>setShow(!show)} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"0 12px",borderRadius:4,fontSize:12,cursor:"pointer"}}>{show?"Nascondi":"Mostra"}</button>
           </div>
+          <div style={{marginBottom:16}}>
+            <label style={{color:C.muted,fontSize:10,letterSpacing:1.5,textTransform:"uppercase",display:"block",marginBottom:8}}>GitHub Token (per salvare la biblioteca)</label>
+            <div style={{display:"flex",gap:8}}>
+              <input type={show?"text":"password"} value={ghToken} onChange={e=>setGhToken(e.target.value)} placeholder="ghp_..."
+                style={{flex:1,background:"#0a0806",border:`1px solid ${C.faint}`,color:C.cream,padding:"10px 12px",borderRadius:4,fontSize:13,outline:"none"}}/>
+            </div>
+            <div style={{color:"#3a5a3a",fontSize:10,marginTop:5,lineHeight:1.5}}>Crea su github.com → Settings → Developer settings → Personal access tokens → Tokens (classic) → repo</div>
+          </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>key.trim()&&onSave(key.trim())} disabled={!key.trim()} style={{flex:1,background:key.trim()?C.gold:"#2a2520",color:key.trim()?"#0f0d09":"#555",border:"none",borderRadius:4,padding:"10px",fontSize:14,fontWeight:700,cursor:key.trim()?"pointer":"not-allowed"}}>Salva e apri l'app</button>
-            <button onClick={()=>onSave("")} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"10px 16px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Salta (solo Bach)</button>
+            <button onClick={()=>key.trim()&&onSave(key.trim(),ghToken.trim())} disabled={!key.trim()} style={{flex:1,background:key.trim()?C.gold:"#2a2520",color:key.trim()?"#0f0d09":"#555",border:"none",borderRadius:4,padding:"10px",fontSize:14,fontWeight:700,cursor:key.trim()?"pointer":"not-allowed"}}>Salva e apri l'app</button>
+            <button onClick={()=>onSave("","")} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"10px 16px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Salta (solo Bach)</button>
           </div>
         </div>
         <div style={{background:"#0f1a0f",border:"1px solid #1a3a1a",borderRadius:8,padding:20}}>
@@ -578,20 +619,39 @@ ISTRUZIONI:
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
 function App() {
   const [apiKey,setApiKey]=useState(null);
+  const [ghToken,setGhToken]=useState("");
   const [showSetup,setShowSetup]=useState(false);
   const [library,setLibrary]=useState([]);
   const [active,setActive]=useState(BUILTIN);
   const [expanded,setExpanded]=useState(null);
   const [showLib,setShowLib]=useState(false);
   const [flash,setFlash]=useState(false);
+  const [syncStatus,setSyncStatus]=useState(null);
   const libraryRef=useRef([]);
+  const ghTokenRef=useRef("");
 
   useEffect(()=>{
-    const k=loadApiKey(); setApiKey(k); setShowSetup(!k);
-    const lib=loadLibrary(); setLibrary(lib); libraryRef.current=lib;
+    const k=loadApiKey(); setApiKey(k);
+    const gh=loadGhToken(); setGhToken(gh); ghTokenRef.current=gh;
+    setShowSetup(!k);
+    // Carica biblioteca da GitHub se token disponibile, altrimenti localStorage
+    if(gh){
+      setSyncStatus("sync");
+      loadLibrary(gh).then(lib=>{
+        setLibrary(lib); libraryRef.current=lib; setSyncStatus(null);
+      }).catch(()=>setSyncStatus(null));
+    }
   },[]);
 
-  const handleSetup=k=>{saveApiKey(k);setApiKey(k);setShowSetup(false);};
+  const handleSetup=(k,gh)=>{
+    saveApiKey(k); setApiKey(k);
+    saveGhToken(gh); setGhToken(gh); ghTokenRef.current=gh;
+    setShowSetup(false);
+    if(gh){
+      setSyncStatus("sync");
+      loadLibrary(gh).then(lib=>{setLibrary(lib);libraryRef.current=lib;setSyncStatus(null);});
+    }
+  };
 
   const handleResults=useCallback(data=>{
     const now=new Date().toLocaleDateString("it-IT",{day:"2-digit",month:"short",year:"numeric"});
@@ -614,16 +674,19 @@ function App() {
       }),
     };
     setActive(entry);setExpanded(null);
-    // Use ref to always have current library value, avoiding stale closure
-    const updated=saveLibrary([...libraryRef.current,entry]);
-    libraryRef.current=updated;
-    setLibrary(updated);setFlash(true);setTimeout(()=>setFlash(false),2500);
+    setSyncStatus("saving");
+    saveLibrary([...libraryRef.current,entry],ghTokenRef.current).then(updated=>{
+      libraryRef.current=updated; setLibrary(updated);
+      setSyncStatus(null); setFlash(true); setTimeout(()=>setFlash(false),2500);
+    });
   },[]);
 
   const handleDelete=id=>{
-    const updated=saveLibrary(libraryRef.current.filter(e=>e.id!==id));
-    libraryRef.current=updated;
-    setLibrary(updated);if(active.id===id)setActive(BUILTIN);
+    setSyncStatus("saving");
+    saveLibrary(libraryRef.current.filter(e=>e.id!==id),ghTokenRef.current).then(updated=>{
+      libraryRef.current=updated; setLibrary(updated); setSyncStatus(null);
+      if(active.id===id)setActive(BUILTIN);
+    });
   };
 
   const handleImport=guides=>{
@@ -657,7 +720,9 @@ function App() {
                 </button>
               </div>
               {flash&&<span className="flash" style={{color:C.green,fontSize:10}}>✓ Salvata</span>}
-              {apiKey&&<span onClick={()=>setShowSetup(true)} style={{color:"#4a8a5a",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",marginTop:6,display:"block"}}>🔑 API configurata</span>}
+              {apiKey&&<span onClick={()=>setShowSetup(true)} style={{color:"#4a8a5a",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",marginTop:6,display:"block"}}>🔑 API configurata {ghToken?"· 📂 GitHub":"· ⚠️ no GitHub"}</span>}
+              {syncStatus==="saving"&&<span style={{color:C.gold,fontSize:9,marginTop:3,display:"block"}}>💾 Salvataggio…</span>}
+              {syncStatus==="sync"&&<span style={{color:C.gold,fontSize:9,marginTop:3,display:"block"}}>🔄 Sincronizzazione…</span>}
             </div>
           </div>
         </div>
