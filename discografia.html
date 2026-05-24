@@ -782,7 +782,21 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+class ErrorBoundary extends React.Component {
+  constructor(props){super(props);this.state={error:null};}
+  static getDerivedStateFromError(e){return {error:e};}
+  render(){
+    if(this.state.error) return (
+      <div style={{padding:20,color:"#f0ead6",background:"#1a0000",minHeight:"100vh",fontFamily:"monospace",fontSize:12}}>
+        <div style={{color:"#c96060",fontSize:16,marginBottom:12}}>⚠️ Errore di avvio</div>
+        <div style={{color:"#ff9999",lineHeight:1.7,wordBreak:"break-all"}}>{this.state.error.toString()}</div>
+        <div style={{color:"#666",marginTop:16,fontSize:10}}>Copia questo testo e mandalo a Claude per la diagnosi.</div>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<ErrorBoundary><App/></ErrorBoundary>);
 </script>
 </body>
 </html>
