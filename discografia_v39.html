@@ -161,17 +161,14 @@ const SOURCES = [
   {name:"ClassicsToday",url:"https://www.classicstoday.com",desc:"Sito USA con voto su esecuzione e registrazione"},
   {name:"The Guardian",url:"https://www.theguardian.com/music/classicalmusicandopera",desc:"Critica culturale di alto livello, UK"},
   {name:"The Classic Review",url:"https://theclassicreview.com",desc:"Sito internazionale con recensioni approfondite"},
-  {name:"Limelight",url:"https://limelight-arts.com.au",desc:"Rivista australiana di musica classica"},
   {name:"ArkivMusic",url:"https://arkivmusic.com",desc:"Database discografico con recensioni accademiche"},
-  {name:"ClassicalGuy",url:"https://classicalguy.substack.com",desc:"Newsletter specializzata su discografia classica"},
-  {name:"TalkClassical",url:"https://www.talkclassical.com",desc:"Comunità di appassionati e critici"},
 ];
 
 // ── PDF EXPORT ────────────────────────────────────────────────────────────────
 function generatePDF(entry) {
   const lines=[];
   lines.push("CRITICA DISCOGRAFICA SPECIALIZZATA");
-  lines.push("Fonti: Gramophone, BBC Music Magazine, ClassicsToday, The Guardian, The Classic Review, Limelight, ArkivMusic");
+  lines.push("Fonti: Gramophone, BBC Music Magazine, ClassicsToday, The Guardian, The Classic Review, ArkivMusic");
   lines.push("");
   lines.push((entry.work||"").toUpperCase());
   if(entry.instrument) lines.push("Strumento: "+entry.instrument);
@@ -538,7 +535,7 @@ Strumento: ${instrument||"non specificato"}
 
 ISTRUZIONI:
 1. Trova le 4-6 migliori registrazioni secondo Gramophone, BBC Music Magazine, ClassicsToday, The Guardian, The Classic Review.
-2. Per OGNI registrazione cerca separatamente su qobuz.com l'URL univoco di quell'album specifico. Ogni registrazione DEVE avere un qobuzUrl diverso. Se non trovi l'URL specifico usa null.
+2. Per OGNI registrazione cerca su qobuz.com l'URL univoco dell'album. Ogni registrazione deve avere un qobuzUrl diverso. Se non trovato usa null.
 3. Rispondi SOLO con JSON puro (no markdown, no backtick):
 {"work":"Compositore - Opera","instrument":"strumento","summary":"intro 2 righe","recommendation":"consiglio finale","recordings":[{"rank":1,"interpreter":"nome","label":"etichetta","year":"anno","books":"volume","execStars":5,"recStars":4,"consensus":"unanime","consensusIcon":"🟢","execNote":"nota esecuzione","recNote":"nota registrazione","criticalNote":"nota critica con citazioni riviste","qobuzUrl":"URL completo qobuz.com oppure null"}]}`;
 
@@ -551,7 +548,7 @@ ISTRUZIONI:
         iterations++;
         const body={model:"claude-sonnet-4-5",max_tokens:4000,messages,...(useSearch?{tools:[{type:"web_search_20250305",name:"web_search"}]}:{})};
         const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers,body:JSON.stringify(body)});
-        if(!resp.ok){const err=await resp.json().catch(()=>({}));const e=new Error(err.error?.message||`Errore ${resp.status}`);e.status=resp.status;throw e;}
+        if(!resp.ok){const err=await resp.json().catch(()=>({}));const e=new Error(err.error?.message||`Errore ${resp.status}`);e.status=resp.status;e.isRateLimit=(resp.status===429||err.error?.type==="rate_limit_error"||(err.error?.message||"").toLowerCase().includes("rate"));throw e;}
         const data=await resp.json();
         messages.push({role:"assistant",content:data.content});
         if(data.stop_reason==="end_turn"){finalText=data.content.filter(b=>b.type==="text").map(b=>b.text).join("");break;}
@@ -696,7 +693,7 @@ function App() {
             <div style={{flex:1,minWidth:0}}>
               <div style={{color:C.gold,fontSize:8,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Guida alle Registrazioni · Musica Classica</div>
               <h1 style={{margin:0,fontSize:17,fontWeight:400,color:C.cream,lineHeight:1.2}}>Critica Discografica Specializzata</h1>
-              <p style={{color:C.muted,fontSize:9,margin:"4px 0 0",lineHeight:1.5}}>Gramophone · BBC Music · ClassicsToday · The Guardian · Limelight</p>
+              <p style={{color:C.muted,fontSize:9,margin:"4px 0 0",lineHeight:1.5}}>Gramophone · BBC Music Magazine · ClassicsToday · The Guardian · The Classic Review · ArkivMusic</p>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end",flexShrink:0}}>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
