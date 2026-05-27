@@ -22,6 +22,27 @@ a { color:inherit; }
 </style>
 </head>
 <body>
+<script>
+window.onerror = function(msg, src, line, col, err) {
+  document.body.style.background = '#300';
+  document.body.style.color = '#fff';
+  document.body.style.fontFamily = 'monospace';
+  document.body.style.padding = '20px';
+  document.body.style.fontSize = '12px';
+  document.body.innerHTML = '<b>ERRORE JS:</b><br>' + msg + '<br>File: ' + src + '<br>Riga: ' + line;
+  return true;
+};
+window.addEventListener('DOMContentLoaded', function() {
+  var root = document.getElementById('root');
+  if (root && !root.hasChildNodes()) {
+    setTimeout(function() {
+      if (!root.hasChildNodes()) {
+        root.innerHTML = '<div style="padding:20px;color:#fff;background:#300;font-family:monospace">Root vuoto dopo 3s — Babel non ha compilato. Controlla console.</div>';
+      }
+    }, 3000);
+  }
+});
+</script>
 <div id="root"></div>
 
 <script>
