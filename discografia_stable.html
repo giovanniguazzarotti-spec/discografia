@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Critica Discografica Classica</title>
+<script>
+window.GH={
+  LS:"cdc_gh_token_v1",
+  API:"https://api.github.com/repos/giovanniguazzarotti-spec/discografia/contents/biblioteca.json",
+  tok:function(){try{return localStorage.getItem(this.LS)||"";}catch{return "";}},
+  saveTok:function(k){try{localStorage.setItem(this.LS,k);}catch{}},
+  load:async function(tok){
+    if(!tok)return null;
+    try{
+      var r=await fetch(this.API,{headers:{"Authorization":"token "+tok}});
+      if(!r.ok)return null;
+      var d=await r.json();
+      return JSON.parse(atob(d.content.replace(/
+/g,"")));
+    }catch(e){console.error("GH.load:",e);return null;}
+  },
+  save:async function(lib,tok){
+    if(!tok)return;
+    try{
+      var sha=null;
+      try{var r=await fetch(this.API,{headers:{"Authorization":"token "+tok}});if(r.ok)sha=(await r.json()).sha;}catch{}
+      var body={message:"Biblioteca",content:btoa(unescape(encodeURIComponent(JSON.stringify(lib))))};
+      if(sha)body.sha=sha;
+      await fetch(this.API,{method:"PUT",headers:{"Authorization":"token "+tok,"Content-Type":"application/json"},body:JSON.stringify(body)});
+    }catch(e){console.error("GH.save:",e);}
+  }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:#0f0d09; color:#f0ead6; font-family:'Palatino Linotype',Georgia,serif; }
+input,button,select { font-family:inherit; }
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:#17140f; }
+::-webkit-scrollbar-thumb { background:#3a3020; border-radius:3px; }
+a { color:inherit; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
+.flash { animation:fadeIn 0.3s ease; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.spin { animation:spin 1s linear infinite; display:inline-block; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef, useMemo } = React;
+
+const C = {
+  bg:"#0f0d09", bg2:"#17140f", bg3:"#1e1a14",
+  border:"#2e2820", borderGold:"#c9a84c44",
+  gold:"#c9a84c", goldDim:"#9a7a30",
+  cream:"#f0ead6", mid:"#9a8e7a", muted:"#6a5f4a", faint:"#3a3020",
+  green:"#5a9e70", amber:"#c9a84c", red:"#c96060",
+  cardA:"#1a2a1a", cardB:"#2a2010", cardC:"#2a1010",
+};
+
+// ── STORAGE ───────────────────────────────────────────────────────────────────
+const LS_LIB = "cdc_library_v1", LS_KEY = "cdc_apikey_v1";
+function loadLibrary() { try { return JSON.parse(localStorage.getItem(LS_LIB)||"[]"); } catch{return[];} }
+function saveLibrary(lib) {
+  try {
+    const safe = lib.slice(-200).map(e=>({...e, recordings:(e.recordings||[]).map(r=>({
+      ...r, execNote:(r.execNote||"").slice(0,300), recNote:(r.recNote||"").slice(0,300),
+      criticalNote:(r.criticalNote||"").slice(0,500), qobuz:(r.qobuz||[]).slice(0,4), reviews:(r.reviews||[]).slice(0,4),
+    }))}));
+    const val=JSON.stringify(safe);
+    if(val.length>4500000) return saveLibrary(safe.slice(1));
+    localStorage.setItem(LS_LIB,val); return safe;
+  } catch(e){console.error(e);return lib;}
+}
+function loadApiKey() { return localStorage.getItem(LS_KEY)||""; }
+function saveApiKey(k) { localStorage.setItem(LS_KEY,k); }
+
+// ── QOBUZ LINK ────────────────────────────────────────────────────────────────
+function toOpenQobuz(url) {
+  if(!url) return null;
+  try { const u=new URL(url); const p=u.pathname.split("/").filter(Boolean); const id=p[p.length-1]; return id?`https://open.qobuz.com/album/${id}`:url; }
+  catch{return url;}
+}
+
+// ── EXPORT / IMPORT ───────────────────────────────────────────────────────────
+function exportLibrary(library, entries) {
+  const all = entries || [{...BUILTIN,_builtin:true},...library];
+  const st=n=>"\u2605".repeat(n)+"\u2606".repeat(5-n);
+  const lines=["BIBLIOTECA DISCOGRAFICA CLASSICA","Fonti: Gramophone, BBC Music Magazine, ClassicsToday, The Guardian, The Classic Review","Esportata il "+new Date().toLocaleDateString("it-IT",{day:"2-digit",month:"long",year:"numeric"}),"=".repeat(60)];
+  all.forEach((e,ei)=>{
+    const idx=e._builtin?1:ei+1;
+    lines.push("","#"+idx+"  "+e.work);
+    if(e.instrument)lines.push("Strumento: "+e.instrument);
+    if(e.savedAt)lines.push("Data: "+e.savedAt);
+    if(e.summary)lines.push(e.summary);
+    lines.push("-".repeat(60));
+    (e.recordings||[]).forEach(rec=>{
+      lines.push("  "+rec.rank+". "+rec.interpreter+"  ["+rec.label+" - "+rec.year+"]  "+rec.consensusIcon+" "+rec.consensus);
+      lines.push("     Esec: "+st(rec.execStars||0)+"  Reg: "+st(rec.recStars||0));
+      if(rec.execNote)lines.push("     "+rec.execNote);
+      if(rec.criticalNote)lines.push("     "+rec.criticalNote);
+      const ql=(rec.qobuz||[]).filter(q=>q.url).map(q=>{try{const u=new URL(q.url);const p=u.pathname.split("/").filter(Boolean);return "https://open.qobuz.com/album/"+p[p.length-1];}catch{return q.url;}});
+      if(ql.length)lines.push("     Qobuz: "+ql.join(" | "));
+      lines.push("");
+    });
+    if(e.recommendation)lines.push("  Consiglio: "+e.recommendation);
+    lines.push("=".repeat(60));
+  });
+  return lines.join("\n");
+}
+function importLibrary(file, onSuccess, onError) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const guides = data.guides || (Array.isArray(data)?data:[]);
+      if(!guides.length) { onError("File vuoto o formato non riconosciuto."); return; }
+      onSuccess(guides);
+    } catch { onError("Errore nel leggere il file JSON."); }
+  };
+  reader.readAsText(file);
+}
+
+// ── BUILTIN DATA ──────────────────────────────────────────────────────────────
+const BUILTIN = {
+  id:"builtin_bach_wtc", work:"J.S. Bach – Il Clavicembalo ben temperato (BWV 846–893)",
+  instrument:"Clavicembalo", savedAt:"Precaricato",
+  summary:"Le 48 coppie di preludi e fughe rappresentano una delle vette assolute della letteratura musicale occidentale.",
+  recommendation:"Per iniziare: Verlet per il suono d'epoca insuperabile, Suzuki (Masato) per la qualità Hi-Res moderna, Esfahani per la lettura più originale del 2025.",
+  recordings:[
+    {rank:1,level:"A",interpreter:"Blandine Verlet",label:"Naïve / Astrée",year:"1993",books:"I + II",consensus:"unanime",consensusIcon:"🟢",execStars:5,recStars:5,execNote:"Clavicembalo Hans Ruckers II del 1624 autentico. Interpretazione di rara forza emotiva e rigore storico.",recNote:"Tra le registrazioni sonicamente più belle del catalogo. Ruckers catturato splendidamente.",criticalNote:"ClassicsToday: reference recording assoluta. Unanime tra BBC Music e forum specialistici. Riserva minoritaria: rubato 'avventuroso'.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/ie-en/album/bach-le-clavier-bien-tempere-livre-i-clavecin-hans-ruckers-ii-1624-blandine-verlet/3298490085103"},{label:"Libro II",url:"https://www.qobuz.com/us-en/album/j-s-bach-le-clavier-bien-tempere-livre-ii-blandine-verlet/3298490085394"}],reviews:[{label:"ClassicsToday",url:"https://www.classicstoday.com/review/well-tempered-clavier-book-savor/"},{label:"BBC Music",url:"http://www.classical-music.com/review/bach-391"}]},
+    {rank:2,level:"A",interpreter:"Kenneth Gilbert",label:"Archiv / DG",year:"1983",books:"I + II",consensus:"unanime",consensusIcon:"🟢",execStars:5,recStars:3,execNote:"Sobrio, spontaneo, privo di manierismi. Clavicembalo fiammingo Couchet 1671.",recNote:"Digitale primo periodo: ravvicinato e lievemente compresso rispetto agli standard moderni.",criticalNote:"ClassicsToday: 'reference recording'. Unanime tra tutte le fonti. Limite: audio datato 1983.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/us-en/album/bach-the-well-tempered-clavier-i-kenneth-gilbert/0002894742212"}],reviews:[{label:"ClassicsToday",url:"https://www.classicstoday.com/review/reference-recording-kenneth-gilberts-well-tempered-clavier/"}]},
+    {rank:3,level:"A",interpreter:"Christine Schornsheim",label:"Capriccio / SWR2",year:"2011",books:"I + II",consensus:"unanime",consensusIcon:"🟢",execStars:5,recStars:5,execNote:"Equilibrio perfetto tra rigore e naturalezza. Ornamentazione sobria e fedele alle fonti.",recNote:"Clavicembalo Ruckers 1624 originale di Colmar. Forse il suono più bello di tutto il catalogo.",criticalNote:"Unanime tra ClassicsToday e ArkivMusic. Non disponibile su Qobuz — lacuna seria del catalogo.",qobuz:[],reviews:[{label:"ClassicsToday",url:"https://www.classicstoday.com/review/review-16311/"},{label:"ArkivMusic",url:"https://arkivmusic.com/products/bach-the-well-tempered-clavier-schornsheim-193411"}]},
+    {rank:4,level:"A",interpreter:"Masato Suzuki",label:"BIS",year:"2024–25",books:"I + II",consensus:"ampio e coerente",consensusIcon:"🟢",execStars:4,recStars:5,execNote:"Vivace, retoricamente convincente. Buon gusto infallibile.",recNote:"BIS Hi-Res a Toppan Hall Tokyo: qualità audio più alta in assoluto nel catalogo moderno.",criticalNote:"Gramophone: 'pleasurable benchmark'. The Guardian: 'Suzuki al suo meglio'.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/us-en/album/js-bach-the-well-tempered-clavier-book-1/ri4gahrgsnrac"}],reviews:[{label:"Gramophone",url:"https://www.gramophone.co.uk/reviews/js-bach-the-well-tempered-clavier-book-1-masato-suzuki"}]},
+    {rank:5,level:"B",interpreter:"Mahan Esfahani",label:"Hyperion",year:"2025",books:"Solo Libro I",consensus:"entusiasta, qualche riserva",consensusIcon:"🟡",execStars:5,recStars:4,execNote:"Filosofico, teatrale, profondamente personale. Il più originale del panorama attuale.",recNote:"Hyperion in chiesa a Loughton: ottima ma con lieve eco ambientale che divide i critici.",criticalNote:"Guardian ★★★★★. Gramophone entusiasta. The Classic Review: legato talvolta laborioso nel Preludio in do minore.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/us-en/album/bach-the-well-tempered-clavier-i-mahan-esfahani/pp7m9ij94edgb"}],reviews:[{label:"Gramophone",url:"https://www.gramophone.co.uk/reviews/js-bach-the-well-tempered-clavier-book-i-mahan-esfahani"},{label:"Guardian ★★★★★",url:"https://www.theguardian.com/music/2025/sep/05/bach-well-tempered-clavier-book-1-mahan-esfahani-review"},{label:"Classic Review",url:"https://theclassicreview.com/album-reviews/review-bach-the-well-tempered-clavier-book-1-mahan-esfahani-harpsichord/"}]},
+    {rank:6,level:"B",interpreter:"Gustav Leonhardt",label:"DHM",year:"1973",books:"I + II",consensus:"storico, audio divide",consensusIcon:"🟡",execStars:5,recStars:3,execNote:"Austera grandiosità, profondità musicologica senza paragoni. Cembalo Zell 1728.",recNote:"Registrazione del 1973: calda ma con limiti d'epoca inferiori a Verlet.",criticalNote:"BBC Music: 'nobile, privo di manierismi'. ClassicsToday loda. Verlet, stesso decennio, suona meglio.",qobuz:[{label:"Libri I+II",url:"https://www.qobuz.com/be-fr/album/bach-das-wohltemperierte-klavier-vol1-bwv-846-869-gustav-leonhardt/0035627701122"}],reviews:[{label:"BBC Music",url:"https://www.classical-music.com/features/recordings/best-recordings-js-bachs-well-tempered-clavier"}]},
+    {rank:7,level:"C",interpreter:"Andreas Staier",label:"Harmonia Mundi",year:"2020–23",books:"I + II",consensus:"diviso (II ottimo, I controverso)",consensusIcon:"🔴",execStars:4,recStars:3,execNote:"Potente e virtuosistico. Libro II unanime. Libro I troppo iperattivo per BBC Music.",recNote:"Teldex Berlino: nitido ma con eco calda e soffocante (BBC Music).",criticalNote:"HM definisce Libro II reference recording. BBC Music sul Libro I: 'iperattività precluda la bellezza'.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/us-en/album/js-bach-the-well-tempered-clavier-book-1-andreas-staier/akrq739gxmhfb"},{label:"Libro II",url:"https://www.qobuz.com/us-en/album/js-bach-the-well-tempered-clavier-book-2-andreas-staier/ce62h7y8sezlc"}],reviews:[{label:"Gramophone",url:"https://www.gramophone.co.uk/reviews/js-bach-the-well-tempered-clavier-book-1-andreas-staier"},{label:"BBC Music",url:"https://www.classical-music.com/reviews/instrumental/js-bach-the-well-tempered-clavier-book-i-staier"}]},
+    {rank:8,level:"C",interpreter:"Richard Egarr",label:"Harmonia Mundi",year:"2007",books:"Solo Libro I",consensus:"positivo con riserve",consensusIcon:"🟡",execStars:4,recStars:4,execNote:"Rubato generoso, temperamento storicamente accurato. Qualcuno lo trova troppo 'morbido'.",recNote:"Harmonia Mundi: qualità trasparente e ben bilanciata.",criticalNote:"Apprezzato per il temperamento storico. Alcuni: 'Soft Bach', articolazione meno incisiva di Gilbert o Verlet.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/us-en/album/bach-the-well-tempered-clavier-book-1-bwv-846-869-richard-egarr/0093046743123"}],reviews:[]},
+  ],
+};
+
+const SOURCES = [
+  {name:"Gramophone",url:"https://www.gramophone.co.uk",desc:"Rivista britannica di riferimento dal 1923"},
+  {name:"BBC Music Magazine",url:"https://www.classical-music.com",desc:"Mensile britannico con classifiche autorevoli"},
+  {name:"ClassicsToday",url:"https://www.classicstoday.com",desc:"Sito USA con voto su esecuzione e registrazione"},
+  {name:"The Guardian",url:"https://www.theguardian.com/music/classicalmusicandopera",desc:"Critica culturale di alto livello, UK"},
+  {name:"The Classic Review",url:"https://theclassicreview.com",desc:"Sito internazionale con recensioni approfondite"},
+  {name:"Limelight",url:"https://limelight-arts.com.au",desc:"Rivista australiana di musica classica"},
+  {name:"ArkivMusic",url:"https://arkivmusic.com",desc:"Database discografico con recensioni accademiche"},
+  {name:"ClassicalGuy",url:"https://classicalguy.substack.com",desc:"Newsletter specializzata su discografia classica"},
+  {name:"TalkClassical",url:"https://www.talkclassical.com",desc:"Comunità di appassionati e critici"},
+];
+
+// ── PDF EXPORT ────────────────────────────────────────────────────────────────
+function generatePDF(entry) {
+  const lines=[];
+  lines.push("CRITICA DISCOGRAFICA SPECIALIZZATA");
+  lines.push("Fonti: Gramophone, BBC Music Magazine, ClassicsToday, The Guardian, The Classic Review, Limelight, ArkivMusic");
+  lines.push("");
+  lines.push((entry.work||"").toUpperCase());
+  if(entry.instrument) lines.push("Strumento: "+entry.instrument);
+  if(entry.savedAt&&entry.savedAt!=="Precaricato") lines.push("Ricerca: "+entry.savedAt);
+  lines.push("");
+  if(entry.summary){lines.push(entry.summary);lines.push("");}
+  (entry.recordings||[]).forEach(rec=>{
+    lines.push("-".repeat(60));
+    lines.push(`#${rec.rank}  ${rec.interpreter}  [Lv.${rec.level}]  ${rec.consensusIcon} ${rec.consensus}`);
+    lines.push(`${rec.label} - ${rec.year} - ${rec.books}`);
+    lines.push(`Esecuzione: ${"*".repeat(rec.execStars||0)}${"o".repeat(5-(rec.execStars||0))}   Registrazione: ${"*".repeat(rec.recStars||0)}${"o".repeat(5-(rec.recStars||0))}`);
+    lines.push(""); lines.push("ESECUZIONE: "+(rec.execNote||"—"));
+    lines.push("REGISTRAZIONE: "+(rec.recNote||"—"));
+    lines.push("CRITICA: "+(rec.criticalNote||"—"));
+    const ql=(rec.qobuz||[]).filter(q=>q.url).map(q=>`${q.label}: ${q.url}`);
+    if(ql.length) lines.push("QOBUZ: "+ql.join(" | "));
+    const rl=(rec.reviews||[]).map(r=>`${r.label}: ${r.url}`);
+    if(rl.length) lines.push("RECENSIONI: "+rl.join(" | "));
+    lines.push("");
+  });
+  if(entry.recommendation){lines.push("-".repeat(60));lines.push("CONSIGLIO: "+entry.recommendation);lines.push("");}
+  lines.push("Guida discografica critica - Maggio 2026");
+  const pageH=842,margin=50;
+  const objects=[],offsets=[];
+  let objCount=0;
+  const addObj=c=>{objCount++;objects.push({id:objCount,content:c});return objCount;};
+  addObj("<< /Type /Catalog /Pages 2 0 R >>");addObj("");
+  const allPages=[],pageLines=[];let curY=pageH-margin;
+  function flushPage(){
+    if(!pageLines.length)return;
+    let s="BT\n/F1 10 Tf\n12 TL\n";let sy=pageH-margin;
+    for(const l of pageLines){const safe=l.replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)").replace(/[^\x20-\x7E]/g,"?");s+=`${margin} ${sy} Td (${safe.slice(0,100)}) Tj\n0 0 Td `;sy-=13;}
+    s+="ET";
+    const sId=addObj(`<< /Length ${s.length} >>\nstream\n${s}\nendstream`);
+    const pId=addObj(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents ${sId} 0 R /Resources << /Font << /F1 ${objCount+1} 0 R >> >> >>`);
+    allPages.push(pId);pageLines.length=0;
+  }
+  for(const l of lines){if(curY<margin+30){flushPage();curY=pageH-margin;}pageLines.push(l);curY-=13;}
+  flushPage();
+  addObj("<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>");
+  objects[1]={id:2,content:`<< /Type /Pages /Kids [${allPages.map(p=>p+" 0 R").join(" ")}] /Count ${allPages.length} >>`};
+  let pdf="%PDF-1.4\n";
+  for(const o of objects){offsets.push(pdf.length);pdf+=`${o.id} 0 obj\n${o.content}\nendobj\n`;}
+  const xo=pdf.length;
+  pdf+=`xref\n0 ${objCount+1}\n0000000000 65535 f \n`;
+  for(const off of offsets)pdf+=String(off).padStart(10,"0")+" 00000 n \n";
+  pdf+=`trailer\n<< /Size ${objCount+1} /Root 1 0 R >>\nstartxref\n${xo}\n%%EOF`;
+  const blob=new Blob([pdf],{type:"application/pdf"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download=((entry.work||"guida").replace(/[^a-zA-Z0-9\s]/g,"").trim().replace(/\s+/g,"_").slice(0,50))+"_discografia.pdf";
+  a.click();URL.revokeObjectURL(url);
+}
+
+// ── SETUP SCREEN ──────────────────────────────────────────────────────────────
+function SetupScreen({onSave}) {
+  const [key,setKey]=useState(""); const [show,setShow]=useState(false);
+  return (
+    <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{maxWidth:520,width:"100%"}}>
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{color:C.gold,fontSize:10,letterSpacing:3,textTransform:"uppercase",marginBottom:12}}>Critica Discografica Specializzata</div>
+          <h1 style={{color:C.cream,fontWeight:400,fontSize:26,marginBottom:8}}>Configurazione chiave API</h1>
+          <p style={{color:C.mid,fontSize:13,lineHeight:1.7}}>Per usare la ricerca AI inserisci la tua chiave API Anthropic.<br/>Puoi usare l'app anche senza — i dati Bach precaricati sono sempre disponibili.</p>
+        </div>
+        <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:24,marginBottom:16}}>
+          <label style={{color:C.muted,fontSize:10,letterSpacing:1.5,textTransform:"uppercase",display:"block",marginBottom:8}}>Chiave API Anthropic</label>
+          <div style={{display:"flex",gap:8,marginBottom:12}}>
+            <input type={show?"text":"password"} value={key} onChange={e=>setKey(e.target.value)} placeholder="sk-ant-api03-..."
+              onKeyDown={e=>e.key==="Enter"&&key.trim()&&onSave(key.trim())}
+              style={{flex:1,background:"#0a0806",border:`1px solid ${C.faint}`,color:C.cream,padding:"10px 12px",borderRadius:4,fontSize:13,outline:"none"}}/>
+            <button onClick={()=>setShow(!show)} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"0 12px",borderRadius:4,fontSize:12,cursor:"pointer"}}>{show?"Nascondi":"Mostra"}</button>
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>key.trim()&&onSave(key.trim())} disabled={!key.trim()} style={{flex:1,background:key.trim()?C.gold:"#2a2520",color:key.trim()?"#0f0d09":"#555",border:"none",borderRadius:4,padding:"10px",fontSize:14,fontWeight:700,cursor:key.trim()?"pointer":"not-allowed"}}>Salva e apri l'app</button>
+            <button onClick={()=>onSave("")} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"10px 16px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Salta (solo Bach)</button>
+          </div>
+        </div>
+        <div style={{background:"#0f1a0f",border:"1px solid #1a3a1a",borderRadius:8,padding:20}}>
+          <div style={{color:C.green,fontSize:11,fontWeight:700,marginBottom:10,letterSpacing:1}}>COME OTTENERE LA CHIAVE</div>
+          {[["1","Vai su","platform.claude.com","https://platform.claude.com"],["2","Crea un account (separato da Claude.ai)","",""],["3","Menu laterale → \"API Keys\" → \"Create Key\"","",""],["4","Aggiungi credito: minimo $5 (≈ 380 ricerche)","",""]].map(([n,t,link,url])=>(
+            <div key={n} style={{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}}>
+              <span style={{background:C.faint,color:C.gold,borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0,marginTop:1}}>{n}</span>
+              <span style={{color:C.mid,fontSize:12,lineHeight:1.5}}>{t} {link&&<a href={url} target="_blank" rel="noreferrer" style={{color:C.gold}}>{link}</a>}</span>
+            </div>
+          ))}
+          <div style={{borderTop:`1px solid #1a3a1a`,marginTop:12,paddingTop:12,color:"#4a6a4a",fontSize:11,lineHeight:1.6}}>
+            💰 Costo per ricerca: ~$0.013 (meno di 2 centesimi)<br/>
+            🔒 La chiave è salvata solo sul tuo dispositivo — mai inviata ad altri
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── STARS ─────────────────────────────────────────────────────────────────────
+function Stars({n,size=12}) {
+  return <span>{Array.from({length:5},(_,i)=><span key={i} style={{color:i<n?C.gold:C.faint,fontSize:size}}>★</span>)}</span>;
+}
+
+// ── RECORDING CARD ────────────────────────────────────────────────────────────
+function Card({rec,expanded,onToggle,work}) {
+  const lvlBg={A:C.cardA,B:C.cardB,C:C.cardC}[rec.level]||C.bg2;
+  const cc=rec.consensusIcon==="🟢"?C.green:rec.consensusIcon==="🔴"?C.red:C.amber;
+  return (
+    <div onClick={onToggle} style={{background:expanded?lvlBg:C.bg2,border:`1px solid ${expanded?C.gold+"66":C.border}`,borderRadius:6,marginBottom:8,cursor:"pointer",transition:"border-color 0.15s"}}>
+      <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10}}>
+        <span style={{color:C.gold,fontFamily:"Georgia",fontSize:20,fontWeight:700,minWidth:26}}>{rec.rank}</span>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+            <span style={{color:C.cream,fontSize:15,fontWeight:600}}>{rec.interpreter}</span>
+            <span style={{background:C.faint,color:C.gold,fontSize:9,padding:"1px 6px",borderRadius:3,fontFamily:"monospace"}}>LIV.{rec.level}</span>
+            <span style={{color:cc,fontSize:11}}>{rec.consensusIcon} {rec.consensus}</span>
+          </div>
+          <div style={{color:C.muted,fontSize:11,marginTop:2}}>{rec.label} · {rec.year} · {rec.books}</div>
+        </div>
+        <div style={{display:"flex",gap:14}}>
+          {[["Esec.",rec.execStars],["Reg.",rec.recStars]].map(([l,n])=>(
+            <div key={l} style={{textAlign:"center"}}>
+              <div style={{color:C.muted,fontSize:8,letterSpacing:1,textTransform:"uppercase"}}>{l}</div>
+              <Stars n={n}/>
+            </div>
+          ))}
+        </div>
+        <span style={{color:C.gold,fontSize:14,marginLeft:4}}>{expanded?"▲":"▼"}</span>
+      </div>
+      {expanded&&(
+        <div style={{padding:"0 16px 16px",borderTop:`1px solid ${C.border}`}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:12}}>
+            {[["⭐ Esecuzione",rec.execNote,rec.execStars],["🎙️ Registrazione",rec.recNote,rec.recStars]].map(([l,note,n])=>(
+              <div key={l} style={{background:C.bg,borderRadius:4,padding:"9px 12px"}}>
+                <div style={{color:C.gold,fontSize:9,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>{l}</div>
+                <Stars n={n}/><p style={{color:C.mid,fontSize:11,margin:"5px 0 0",lineHeight:1.6}}>{note}</p>
+              </div>
+            ))}
+          </div>
+          <div style={{background:C.bg,borderRadius:4,padding:"9px 12px",marginTop:8}}>
+            <div style={{color:C.muted,fontSize:9,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>📰 Critica</div>
+            <p style={{color:C.mid,fontSize:11,margin:0,lineHeight:1.65}}>{rec.criticalNote}</p>
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
+            {(rec.qobuz||[]).filter(q=>q.url).map((q,i)=>{
+              const appUrl=toOpenQobuz(q.url);
+              return <button key={i}
+                onClick={e=>{e.stopPropagation();e.preventDefault();window.open(appUrl,"_blank","noopener,noreferrer");}}
+                title="Apre nell'app Qobuz"
+                style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",display:"inline-flex",alignItems:"center",gap:5,cursor:"pointer"}}>
+                🎵 {q.label}<span style={{background:"#0e2a1a",border:"1px solid #1a5a30",borderRadius:3,padding:"1px 5px",fontSize:9,color:"#4acf7a"}}>apri app</span>
+              </button>;
+            })}
+            {(rec.reviews||[]).map((r,i)=>(
+              <button key={i}
+                onClick={e=>{e.stopPropagation();e.preventDefault();window.open(r.url,"_blank","noopener,noreferrer");}}
+                style={{background:"#1a1f3a",border:"1px solid #2a3a6a",color:"#7a9acf",padding:"4px 10px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>
+                📰 {r.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── LIBRARY MODAL ─────────────────────────────────────────────────────────────
+function LibraryModal({library, activeId, onSelect, onDelete, onClose, onExport}) {
+  const [search,setSearch]=useState("");
+  const [sortBy,setSortBy]=useState("date");
+  const [showExport,setShowExport]=useState(false);
+  const [pdfEntry,setPdfEntry]=useState(null);
+  const [confirmId,setConfirmId]=useState(null);
+
+  const allEntries = useMemo(()=>{
+    const withBuiltin=[{...BUILTIN,_builtin:true},...library];
+    let filtered = search.trim()
+      ? withBuiltin.filter(e=>(e.work||"").toLowerCase().includes(search.toLowerCase())||(e.instrument||"").toLowerCase().includes(search.toLowerCase()))
+      : withBuiltin;
+    if(sortBy==="title") filtered=[...filtered].sort((a,b)=>(a.work||"").localeCompare(b.work||""));
+    return filtered;
+  },[library,search,sortBy]);
+
+  const avgStars = e => {
+    const recs=e.recordings||[];
+    if(!recs.length) return 0;
+    return Math.round((recs.reduce((s,r)=>s+(r.execStars||0)+(r.recStars||0),0))/(recs.length*2));
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"#000000aa",zIndex:2000,display:"flex",alignItems:"stretch",justifyContent:"flex-end"}} onClick={onClose}>
+      <div style={{width:520,maxWidth:"95vw",background:C.bg2,display:"flex",flexDirection:"column",borderLeft:`1px solid ${C.border}`,boxShadow:"-8px 0 40px #000000aa"}} onClick={e=>e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{padding:"18px 20px 14px",borderBottom:`1px solid ${C.border}`}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+            <div>
+              <span style={{color:C.gold,fontSize:13,letterSpacing:2,textTransform:"uppercase",fontFamily:"Georgia"}}>📚 Biblioteca</span>
+              <span style={{color:C.muted,fontSize:11,marginLeft:10}}>{library.length} guide salvate</span>
+            </div>
+            <button onClick={onClose} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0,lineHeight:1}}>×</button>
+          </div>
+
+          {/* Search */}
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cerca per compositore o strumento…"
+            style={{width:"100%",background:C.bg,border:`1px solid ${C.faint}`,color:C.cream,padding:"8px 11px",borderRadius:4,fontSize:12,outline:"none",marginBottom:10}}/>
+
+          <div style={{display:"flex",gap:4}}>
+            {[["Data","date"],["Titolo","title"]].map(([l,v])=>(
+              <button key={v} onClick={()=>setSortBy(v)} style={{background:sortBy===v?C.faint:"transparent",border:`1px solid ${C.faint}`,color:sortBy===v?C.gold:C.muted,padding:"4px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>↕ {l}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Guide list */}
+        <div style={{flex:1,overflowY:"auto",padding:"10px 12px"}}>
+          {allEntries.length===0&&<div style={{color:C.muted,fontSize:12,padding:"30px",textAlign:"center",lineHeight:1.8}}>
+            {search?"Nessuna guida trovata.":"Nessuna guida salvata ancora.\nLe ricerche appariranno qui automaticamente."}
+          </div>}
+          {allEntries.map((e,i)=>{
+            const isActive=activeId===e.id;
+            const isBuiltin=e._builtin;
+            // Index counts only real searches (excluding builtin)
+            const searchIdx = isBuiltin ? 1 : allEntries.slice(0,i).filter(x=>!x._builtin).length + 2;
+            return (
+              <div key={e.id||i} onClick={()=>{onSelect(e);onClose();}}
+                style={{background:isActive?C.bg3:C.bg,border:`1px solid ${isActive?C.gold+"66":C.border}`,borderRadius:6,padding:"12px 14px",marginBottom:8,cursor:"pointer",position:"relative",transition:"border-color 0.15s"}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                  {/* Index + count */}
+                  <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0,alignItems:"center"}}>
+                    <div style={{background:"#1a1408",border:`1px solid ${C.gold}55`,borderRadius:4,padding:"4px 8px",textAlign:"center",minWidth:36}}>
+                      <div style={{color:C.goldDim,fontSize:8,letterSpacing:0.5}}>#</div>
+                      <div style={{color:C.gold,fontSize:15,fontWeight:700,fontFamily:"Georgia"}}>{searchIdx}</div>
+                    </div>
+                    <div style={{background:"#0f1a14",border:"1px solid #2a4a30",borderRadius:4,padding:"4px 8px",textAlign:"center",minWidth:36}}>
+                      <div style={{color:C.green,fontSize:14,fontWeight:700,fontFamily:"monospace"}}>{(e.recordings||[]).length}</div>
+                      <div style={{color:"#4a7a5a",fontSize:8,letterSpacing:0.5}}>rec.</div>
+                    </div>
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{color:C.cream,fontSize:13,fontFamily:"Georgia",lineHeight:1.3,paddingRight:isBuiltin?0:22}}>{e.work}</div>
+                    <div style={{display:"flex",gap:8,marginTop:5,flexWrap:"wrap",alignItems:"center"}}>
+                      {e.instrument&&<span style={{color:C.muted,fontSize:10,background:C.faint,padding:"1px 7px",borderRadius:10}}>{e.instrument}</span>}
+                      <span style={{color:C.muted,fontSize:10}}>{e.savedAt}</span>
+                      <span style={{color:C.muted,fontSize:10}}>{(e.recordings||[]).length} registrazioni</span>
+                      <Stars n={avgStars(e)} size={10}/>
+                    </div>
+                    {/* Mini recording list */}
+                    {(e.recordings||[]).slice(0,3).map((r,ri)=>(
+                      <div key={ri} style={{color:C.muted,fontSize:10,marginTop:3,display:"flex",alignItems:"center",gap:5}}>
+                        <span style={{color:{A:C.green,B:C.amber,C:C.red}[r.level]||C.muted,fontSize:9}}>{r.level}</span>
+                        <span style={{color:C.mid}}>{r.interpreter}</span>
+                        <span style={{color:C.faint}}>· {r.label} {r.year}</span>
+                      </div>
+                    ))}
+                    {(e.recordings||[]).length>3&&<div style={{color:C.faint,fontSize:10,marginTop:2}}>+ altri {(e.recordings||[]).length-3}…</div>}
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:10,flexShrink:0}}>
+                    <button onClick={ev=>{ev.stopPropagation();setPdfEntry(e);}}
+                      style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.goldDim,padding:"6px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>↓ PDF</button>
+                    {!isBuiltin&&<button onClick={ev=>{ev.stopPropagation();setConfirmId(e.id);}}
+                      style={{background:"transparent",border:"1px solid #3a2020",color:"#8a5050",padding:"6px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>× Elimina</button>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{padding:"14px 16px",borderTop:`1px solid ${C.border}`}}>
+          <button onClick={()=>setShowExport(true)} style={{width:"100%",background:"transparent",border:`1px solid ${C.gold}44`,color:C.goldDim,padding:"8px",borderRadius:4,fontSize:12,cursor:"pointer",fontFamily:"Georgia"}}>
+            ↑ Esporta biblioteca (testo copiabile)
+          </button>
+          <div style={{color:C.faint,fontSize:10,marginTop:8,textAlign:"center"}}>
+            {library.length}/200 guide · Salvate in questo browser
+          </div>
+          {showExport&&(
+            <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setShowExport(false)}>
+              <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",maxWidth:600,maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+                <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{color:C.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase"}}>📋 Biblioteca — testo copiabile</span>
+                  <button onClick={()=>setShowExport(false)} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0}}>×</button>
+                </div>
+                <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
+                  <p style={{color:C.muted,fontSize:11}}>Tocca il testo e seleziona tutto per copiarlo.</p>
+                </div>
+                <textarea readOnly value={onExport()} onClick={e=>e.target.select()}
+                  style={{flex:1,background:"#0a0806",color:C.mid,border:"none",padding:"14px",fontSize:10,fontFamily:"monospace",lineHeight:1.6,resize:"none",outline:"none",minHeight:300}}/>
+              </div>
+            </div>
+          )}
+          {confirmId&&(
+            <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setConfirmId(null)}>
+              <div style={{background:C.bg2,border:"1px solid #3a2020",borderRadius:8,padding:"24px 28px",maxWidth:320,width:"100%",textAlign:"center"}} onClick={ev=>ev.stopPropagation()}>
+                <div style={{color:"#c96060",fontSize:15,marginBottom:10}}>Rimuovi ricerca dalla biblioteca</div>
+                <p style={{color:C.mid,fontSize:12,lineHeight:1.7,marginBottom:20}}>Vuoi rimuovere questa ricerca dalla biblioteca? La guida Bach precaricata non viene toccata.</p>
+                <div style={{display:"flex",gap:10}}>
+                  <button onClick={()=>setConfirmId(null)} style={{flex:1,background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"9px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Annulla</button>
+                  <button onClick={()=>{onDelete(confirmId);setConfirmId(null);}} style={{flex:1,background:"#2a0f0f",border:"1px solid #5a2020",color:"#c96060",padding:"9px",borderRadius:4,fontSize:13,fontWeight:700,cursor:"pointer"}}>Rimuovi</button>
+                </div>
+              </div>
+            </div>
+          )}
+          {pdfEntry&&(
+            <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setPdfEntry(null)}>
+              <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",maxWidth:600,maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+                <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{color:C.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase"}}>📋 {pdfEntry.work}</span>
+                  <button onClick={()=>setPdfEntry(null)} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0}}>×</button>
+                </div>
+                <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
+                  <p style={{color:C.muted,fontSize:11}}>Tocca il testo e seleziona tutto per copiarlo.</p>
+                </div>
+                <textarea readOnly value={onExport([pdfEntry])} onClick={e=>e.target.select()}
+                  style={{flex:1,background:"#0a0806",color:C.mid,border:"none",padding:"14px",fontSize:10,fontFamily:"monospace",lineHeight:1.6,resize:"none",outline:"none",minHeight:300}}/>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SOURCES PANEL ─────────────────────────────────────────────────────────────
+function SourcesPanel() {
+  const [open,setOpen]=useState(false);
+  return (
+    <div style={{marginBottom:16}}>
+      <button onClick={()=>setOpen(!open)} style={{background:"transparent",border:`1px solid ${C.border}`,color:C.muted,padding:"6px 12px",borderRadius:4,fontSize:11,cursor:"pointer",letterSpacing:1}}>
+        {open?"▲":"▼"} Fonti specializzate ({SOURCES.length})
+      </button>
+      {open&&(
+        <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:12,marginTop:8,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
+          {SOURCES.map(s=>(
+            <a key={s.name} href={s.url} target="_blank" rel="noreferrer" style={{textDecoration:"none"}}>
+              <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:4,padding:"7px 9px"}}>
+                <div style={{color:C.gold,fontSize:11,fontWeight:600}}>{s.name}</div>
+                <div style={{color:C.muted,fontSize:9,marginTop:2,lineHeight:1.4}}>{s.desc}</div>
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── SEARCH PANEL ──────────────────────────────────────────────────────────────
+function SearchPanel({apiKey,onResults,onNeedKey}) {
+  const [composer,setComposer]=useState("");
+  const [work,setWork]=useState("");
+  const [instrument,setInstrument]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState(null);
+
+  const search=async()=>{
+    if(!composer.trim()&&!work.trim()) return;
+    if(!apiKey){onNeedKey();return;}
+    setLoading(true);setError(null);
+    const prompt=`Sei un critico musicale specializzato. L'utente cerca:
+Compositore: ${composer||"non specificato"}
+Opera: ${work||"non specificata"}
+Strumento: ${instrument||"non specificato"}
+
+ISTRUZIONI:
+1. Trova le 4-6 migliori registrazioni secondo Gramophone, BBC Music Magazine, ClassicsToday, The Guardian, The Classic Review.
+2. Per OGNI registrazione cerca separatamente su qobuz.com l'URL univoco di quell'album specifico. Ogni registrazione DEVE avere un qobuzUrl diverso. Se non trovi l'URL specifico usa null.
+3. Rispondi SOLO con JSON puro (no markdown, no backtick):
+{"work":"Compositore - Opera","instrument":"strumento","summary":"intro 2 righe","recommendation":"consiglio finale","recordings":[{"rank":1,"interpreter":"nome","label":"etichetta","year":"anno","books":"volume","execStars":5,"recStars":4,"consensus":"unanime","consensusIcon":"🟢","execNote":"nota esecuzione","recNote":"nota registrazione","criticalNote":"nota critica con citazioni riviste","qobuzUrl":"URL completo qobuz.com oppure null"}]}`;
+
+    const callApi=async(useSearch)=>{
+      const headers={"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true",...(useSearch?{"anthropic-beta":"web-search-2025-03-05"}:{})};
+      const messages=[{role:"user",content:prompt}];
+      let finalText="";
+      let iterations=0;
+      while(iterations<8){
+        iterations++;
+        const body={model:"claude-sonnet-4-5",max_tokens:4000,messages,...(useSearch?{tools:[{type:"web_search_20250305",name:"web_search"}]}:{})};
+        const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers,body:JSON.stringify(body)});
+        if(!resp.ok){const err=await resp.json().catch(()=>({}));const e=new Error(err.error?.message||`Errore ${resp.status}`);e.status=resp.status;throw e;}
+        const data=await resp.json();
+        messages.push({role:"assistant",content:data.content});
+        if(data.stop_reason==="end_turn"){finalText=data.content.filter(b=>b.type==="text").map(b=>b.text).join("");break;}
+        if(data.stop_reason==="tool_use"){
+          const tr=data.content.filter(b=>b.type==="tool_use").map(b=>({type:"tool_result",tool_use_id:b.id,content:"OK"}));
+          if(tr.length) messages.push({role:"user",content:tr});
+          continue;
+        }
+        finalText=data.content.filter(b=>b.type==="text").map(b=>b.text).join("");break;
+      }
+      if(!finalText) throw new Error("Nessuna risposta.");
+      const clean=finalText.replace(/```json|```/g,"").trim();
+      const a=clean.indexOf("{"),b=clean.lastIndexOf("}");
+      if(a===-1||b===-1) throw new Error("Formato non valido.");
+      return JSON.parse(clean.slice(a,b+1));
+    };
+
+    try{
+      let parsed;
+      try{
+        parsed=await callApi(true);
+      }catch(e){
+        if(e.status===401) throw e;
+        setError("⚠️ Ricerca web non disponibile — link Qobuz assenti.");
+        setTimeout(()=>setError(null),4000);
+        parsed=await callApi(false);
+      }
+      onResults(parsed);
+    }catch(e){setError(e.message||"Errore. Riprova.");}
+    finally{setLoading(false);}
+  };
+
+  return (
+    <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:18,marginBottom:20}}>
+      <h3 style={{color:C.gold,margin:"0 0 14px",fontSize:13,letterSpacing:2,textTransform:"uppercase"}}>🔍 Cerca nuova opera</h3>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:9,marginBottom:11}}>
+        {[["Compositore",composer,setComposer,"es. Schubert…"],["Opera",work,setWork,"es. Winterreise…"],["Strumento",instrument,setInstrument,"es. pianoforte…"]].map(([l,v,s,p])=>(
+          <div key={l}>
+            <label style={{color:C.muted,fontSize:9,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:4}}>{l}</label>
+            <input value={v} onChange={e=>s(e.target.value)} placeholder={p} onKeyDown={e=>e.key==="Enter"&&search()}
+              style={{width:"100%",background:"#0a0806",border:`1px solid ${C.faint}`,color:C.cream,padding:"7px 9px",borderRadius:4,fontSize:12,outline:"none"}}/>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#666":"#0f0d09",border:"none",borderRadius:4,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:loading?"not-allowed":"pointer"}}>
+          {loading?<span>⏳ Ricerca in corso…</span>:"Cerca registrazioni"}
+        </button>
+        {!apiKey&&<span style={{color:C.amber,fontSize:11}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
+      </div>
+      {error&&<p style={{color:C.red,fontSize:11,marginTop:8,marginBottom:0}}>{error}</p>}
+    </div>
+  );
+}
+
+// ── MAIN APP ──────────────────────────────────────────────────────────────────
+function App() {
+  const [apiKey,setApiKey]=useState(null);
+  const [ghToken,setGhToken]=useState("");
+  const [showGhSetup,setShowGhSetup]=useState(false);
+  const [ghInput,setGhInput]=useState("");
+  const [showSetup,setShowSetup]=useState(false);
+  const [library,setLibrary]=useState([]);
+  const [active,setActive]=useState(BUILTIN);
+  const [expanded,setExpanded]=useState(null);
+  const [showLib,setShowLib]=useState(false);
+  const [flash,setFlash]=useState(false);
+  const libraryRef=useRef([]);
+
+  useEffect(()=>{
+    const k=loadApiKey(); setApiKey(k); setShowSetup(!k);
+    const gh=window.GH.tok(); setGhToken(gh); setGhInput(gh);
+    if(gh){
+      window.GH.load(gh).then(function(lib){if(lib){setLibrary(lib);libraryRef.current=lib;}else{var l=loadLibrary();setLibrary(l);libraryRef.current=l;}});
+    } else {
+      var lib=loadLibrary(); setLibrary(lib); libraryRef.current=lib;
+    }
+  },[]);
+
+  const handleSetup=k=>{saveApiKey(k);setApiKey(k);setShowSetup(false);};
+
+  const handleResults=useCallback(data=>{
+    const now=new Date().toLocaleDateString("it-IT",{day:"2-digit",month:"short",year:"numeric"});
+    const seenUrls=new Set();
+    const entry={...data,id:`s_${Date.now()}`,savedAt:now,
+      recordings:(data.recordings||[]).map((r,i)=>{
+        const qobuz=[];
+        if(r.qobuzUrl&&r.qobuzUrl!=="null"&&typeof r.qobuzUrl==="string"&&r.qobuzUrl.startsWith("http")&&!seenUrls.has(r.qobuzUrl)){
+          seenUrls.add(r.qobuzUrl);
+          qobuz.push({label:"Ascolta",url:r.qobuzUrl});
+        }
+        return {
+          rank:r.rank||i+1,level:r.execStars>=5?"A":r.execStars>=4?"B":"C",
+          interpreter:r.interpreter||"—",label:r.label||"—",year:r.year||"—",books:r.books||"—",
+          consensus:r.consensus||"—",consensusIcon:r.consensusIcon||"🟡",
+          execStars:r.execStars||3,recStars:r.recStars||3,
+          execNote:r.execNote||"",recNote:r.recNote||"",criticalNote:r.criticalNote||"",
+          qobuz,reviews:[],
+        };
+      }),
+    };
+    setActive(entry);setExpanded(null);
+    // Use ref to always have current library value, avoiding stale closure
+    const updated=saveLibrary([...libraryRef.current,entry]);
+    libraryRef.current=updated;
+    setLibrary(updated);setFlash(true);setTimeout(()=>setFlash(false),2500);
+    window.GH.save(updated,window.GH.tok());
+  },[]);
+
+  const handleDelete=id=>{
+    const updated=saveLibrary(libraryRef.current.filter(e=>e.id!==id));
+    libraryRef.current=updated;
+    setLibrary(updated);if(active&&active.id===id)setActive(BUILTIN);
+    window.GH.save(updated,window.GH.tok());
+  };
+
+  const handleImport=guides=>{
+    const merged=saveLibrary([...libraryRef.current,...guides.filter(g=>!libraryRef.current.find(e=>e.id===g.id))]);
+    libraryRef.current=merged;
+    setLibrary(merged);
+  };
+
+  if(showSetup) return <SetupScreen onSave={handleSetup}/>;
+  if(apiKey===null) return null;
+
+  const isBuiltin=active.id==="builtin_bach_wtc";
+
+  return (
+    <div style={{minHeight:"100vh",background:C.bg,color:C.cream,fontFamily:"'Palatino Linotype',Georgia,serif"}}>
+
+      {/* Header */}
+      <div style={{background:"linear-gradient(180deg,#1a1408 0%,#0f0d09 100%)",borderBottom:`1px solid ${C.border}`,padding:"14px 16px 12px"}}>
+        <div style={{maxWidth:880,margin:"0 auto"}}>
+          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{color:C.gold,fontSize:8,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Guida alle Registrazioni · Musica Classica</div>
+              <h1 style={{margin:0,fontSize:17,fontWeight:400,color:C.cream,lineHeight:1.2}}>Critica Discografica Specializzata</h1>
+              <p style={{color:C.muted,fontSize:9,margin:"4px 0 0",lineHeight:1.5}}>Gramophone · BBC Music · ClassicsToday · The Guardian · Limelight</p>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end",flexShrink:0}}>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                
+                <button onClick={()=>setShowLib(true)} style={{background:C.gold+"22",color:C.gold,border:`1px solid ${C.gold}`,borderRadius:5,padding:"5px 11px",fontSize:11,cursor:"pointer",whiteSpace:"nowrap"}}>
+                  📚 {library.length>0?`Biblioteca (${library.length})`:"Biblioteca"}
+                </button>
+              </div>
+              {flash&&<span className="flash" style={{color:C.green,fontSize:10}}>✓ Salvata</span>}
+              {apiKey&&<span onClick={()=>setShowSetup(true)} style={{color:"#4a8a5a",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",display:"block",marginTop:6}}>🔑 API configurata</span>}
+              <span onClick={()=>setShowGhSetup(true)} style={{color:ghToken?"#4a8a5a":"#c9a84c",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",display:"block",marginTop:4}}>{ghToken?"📂 GitHub configurato":"📂 Configura GitHub"}</span>
+              {showGhSetup&&(
+                <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setShowGhSetup(false)}>
+                  <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:24,maxWidth:380,width:"100%"}} onClick={e=>e.stopPropagation()}>
+                    <div style={{color:C.gold,fontSize:13,marginBottom:12,letterSpacing:1}}>📂 GitHub Token</div>
+                    <p style={{color:C.mid,fontSize:11,marginBottom:14,lineHeight:1.6}}>Inserisci il token per salvare la biblioteca su GitHub. Crea su github.com → Settings → Developer settings → Personal access tokens → Tokens (classic) → spunta repo → genera.</p>
+                    <input type="password" value={ghInput} onChange={e=>setGhInput(e.target.value)} placeholder="ghp_..."
+                      style={{width:"100%",background:"#0a0806",border:`1px solid ${C.faint}`,color:C.cream,padding:"9px 12px",borderRadius:4,fontSize:12,outline:"none",marginBottom:12}}/>
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={()=>setShowGhSetup(false)} style={{flex:1,background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"8px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Annulla</button>
+                      <button onClick={()=>{const g=ghInput.trim();window.GH.saveTok(g);setGhToken(g);setShowGhSetup(false);if(g)window.GH.load(g).then(function(lib){if(lib){setLibrary(lib);libraryRef.current=lib;}});}} style={{flex:1,background:C.gold,color:"#0f0d09",border:"none",borderRadius:4,padding:"8px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Salva</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{maxWidth:880,margin:"0 auto",padding:"22px 24px"}}>
+        <SearchPanel apiKey={apiKey} onResults={handleResults} onNeedKey={()=>setShowSetup(true)}/>
+        <SourcesPanel/>
+
+        {/* Results header */}
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14,gap:12}}>
+          <div style={{flex:1}}>
+            <div style={{color:C.gold,fontSize:11,letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>{isBuiltin?"Risultati precaricati":"Risultati ricerca"}</div>
+            <div style={{color:C.cream,fontSize:17,fontStyle:"italic",lineHeight:1.3}}>{active.work}</div>
+            {active.instrument&&<div style={{color:C.muted,fontSize:11,marginTop:2}}>{active.instrument}</div>}
+            {active.summary&&<div style={{color:C.mid,fontSize:11,marginTop:5,lineHeight:1.65,maxWidth:580}}>{active.summary}</div>}
+          </div>
+          <div style={{display:"flex",gap:8,flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
+            {!isBuiltin&&<button onClick={()=>{setActive(BUILTIN);setExpanded(null);}} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"5px 11px",borderRadius:4,fontSize:11,cursor:"pointer"}}>← Bach / WTC</button>}
+            <button onClick={()=>generatePDF(active)} style={{background:"transparent",border:`1px solid ${C.gold}44`,color:C.goldDim,padding:"5px 11px",borderRadius:4,fontSize:11,cursor:"pointer"}} title="Scarica PDF">↓ PDF</button>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div style={{display:"flex",gap:14,marginBottom:12,flexWrap:"wrap"}}>
+          {[["🟢 Unanime",C.green],["🟡 Qualche riserva",C.amber],["🔴 Diviso",C.red]].map(([t,c])=>(
+            <span key={t} style={{color:c,fontSize:10}}>{t}</span>
+          ))}
+          <span style={{color:"#3a3a3a",fontSize:10,marginLeft:"auto"}}>▼ Clicca per espandere</span>
+        </div>
+
+        {(active.recordings||[]).map((rec,i)=>(
+          <Card key={i} rec={rec} expanded={expanded===i} onToggle={()=>setExpanded(expanded===i?null:i)} work={active.work}/>
+        ))}
+
+        {active.recommendation&&(
+          <div style={{background:C.bg2,border:`1px solid ${C.borderGold}`,borderRadius:6,padding:"12px 16px",marginTop:14}}>
+            <div style={{color:C.gold,fontSize:9,letterSpacing:2,textTransform:"uppercase",marginBottom:5}}>💡 Consiglio finale</div>
+            <p style={{color:C.mid,fontSize:12,margin:0,lineHeight:1.7}}>{active.recommendation}</p>
+          </div>
+        )}
+
+        <div style={{borderTop:`1px solid ${C.bg3}`,marginTop:36,paddingTop:12,color:C.faint,fontSize:10}}>
+          Critica Discografica Specializzata · Maggio 2026 · Biblioteca salvata in questo browser · {library.length}/200 guide
+        </div>
+      </div>
+
+      {/* Library modal */}
+      {showLib&&<LibraryModal
+        library={library} activeId={active.id}
+        onSelect={e=>{setActive(e);setExpanded(null);}}
+        onDelete={handleDelete}
+        onClose={()=>setShowLib(false)}
+        onExport={()=>exportLibrary(library)}
+      />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
