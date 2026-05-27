@@ -4,8 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Critica Discografica Classica</title>
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
+<script>
+window.GH={
+  LS:"cdc_gh_token_v1",
+  API:"https://api.github.com/repos/giovanniguazzarotti-spec/discografia/contents/biblioteca.json",
+  tok:function(){try{return localStorage.getItem(this.LS)||"";}catch{return "";}},
+  saveTok:function(k){try{localStorage.setItem(this.LS,k);}catch{}},
+  load:async function(tok){
+    if(!tok)return null;
+    try{
+      var r=await fetch(this.API,{headers:{"Authorization":"token "+tok}});
+      if(!r.ok)return null;
+      var d=await r.json();
+      return JSON.parse(atob(d.content.replace(/
+/g,"")));
+    }catch(e){console.error("GH.load:",e);return null;}
+  },
+  save:async function(lib,tok){
+    if(!tok)return;
+    try{
+      var sha=null;
+      try{var r=await fetch(this.API,{headers:{"Authorization":"token "+tok}});if(r.ok)sha=(await r.json()).sha;}catch{}
+      var body={message:"Biblioteca",content:btoa(unescape(encodeURIComponent(JSON.stringify(lib))))};
+      if(sha)body.sha=sha;
+      await fetch(this.API,{method:"PUT",headers:{"Authorization":"token "+tok,"Content-Type":"application/json"},body:JSON.stringify(body)});
+    }catch(e){console.error("GH.save:",e);}
+  }
+};
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
@@ -573,6 +599,9 @@ ISTRUZIONI:
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
 function App() {
   const [apiKey,setApiKey]=useState(null);
+  const [ghToken,setGhToken]=useState("");
+  const [showGhSetup,setShowGhSetup]=useState(false);
+  const [ghInput,setGhInput]=useState("");
   const [showSetup,setShowSetup]=useState(false);
   const [library,setLibrary]=useState([]);
   const [active,setActive]=useState(BUILTIN);
@@ -583,7 +612,12 @@ function App() {
 
   useEffect(()=>{
     const k=loadApiKey(); setApiKey(k); setShowSetup(!k);
-    const lib=loadLibrary(); setLibrary(lib); libraryRef.current=lib;
+    const gh=window.GH.tok(); setGhToken(gh); setGhInput(gh);
+    if(gh){
+      window.GH.load(gh).then(function(lib){if(lib){setLibrary(lib);libraryRef.current=lib;}else{var l=loadLibrary();setLibrary(l);libraryRef.current=l;}});
+    } else {
+      var lib=loadLibrary(); setLibrary(lib); libraryRef.current=lib;
+    }
   },[]);
 
   const handleSetup=k=>{saveApiKey(k);setApiKey(k);setShowSetup(false);};
@@ -613,12 +647,14 @@ function App() {
     const updated=saveLibrary([...libraryRef.current,entry]);
     libraryRef.current=updated;
     setLibrary(updated);setFlash(true);setTimeout(()=>setFlash(false),2500);
+    window.GH.save(updated,window.GH.tok());
   },[]);
 
   const handleDelete=id=>{
     const updated=saveLibrary(libraryRef.current.filter(e=>e.id!==id));
     libraryRef.current=updated;
-    setLibrary(updated);if(active.id===id)setActive(BUILTIN);
+    setLibrary(updated);if(active&&active.id===id)setActive(BUILTIN);
+    window.GH.save(updated,window.GH.tok());
   };
 
   const handleImport=guides=>{
@@ -652,7 +688,24 @@ function App() {
                 </button>
               </div>
               {flash&&<span className="flash" style={{color:C.green,fontSize:10}}>✓ Salvata</span>}
-              {apiKey&&<span onClick={()=>setShowSetup(true)} style={{color:"#4a8a5a",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",marginTop:6,display:"block"}}>🔑 API configurata</span>}
+              {apiKey&&<div style={{display:"flex",flexDirection:"column",gap:5,marginTop:6}}>
+                <span onClick={()=>setShowSetup(true)} style={{color:"#4a8a5a",fontSize:10,cursor:"pointer",textDecoration:"underline dotted"}}>🔑 API configurata</span>
+                <span onClick={()=>setShowGhSetup(true)} style={{color:ghToken?"#4a8a5a":"#c9a84c",fontSize:10,cursor:"pointer",textDecoration:"underline dotted"}}>{ghToken?"📂 GitHub configurato":"📂 Configura GitHub"}</span>
+              </div>}
+              {showGhSetup&&(
+                <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setShowGhSetup(false)}>
+                  <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:24,maxWidth:380,width:"100%"}} onClick={e=>e.stopPropagation()}>
+                    <div style={{color:C.gold,fontSize:13,marginBottom:12,letterSpacing:1}}>📂 GitHub Token</div>
+                    <p style={{color:C.mid,fontSize:11,marginBottom:14,lineHeight:1.6}}>Inserisci il token per salvare la biblioteca su GitHub. Crea su github.com → Settings → Developer settings → Personal access tokens → Tokens (classic) → spunta repo → genera.</p>
+                    <input type="password" value={ghInput} onChange={e=>setGhInput(e.target.value)} placeholder="ghp_..."
+                      style={{width:"100%",background:"#0a0806",border:`1px solid ${C.faint}`,color:C.cream,padding:"9px 12px",borderRadius:4,fontSize:12,outline:"none",marginBottom:12}}/>
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={()=>setShowGhSetup(false)} style={{flex:1,background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"8px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Annulla</button>
+                      <button onClick={()=>{const g=ghInput.trim();window.GH.saveTok(g);setGhToken(g);setShowGhSetup(false);if(g)window.GH.load(g).then(function(lib){if(lib){setLibrary(lib);libraryRef.current=lib;}});}} style={{flex:1,background:C.gold,color:"#0f0d09",border:"none",borderRadius:4,padding:"8px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Salva</button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
