@@ -155,14 +155,20 @@ const BUILTIN = {
   ],
 };
 
-const SOURCES = [
+const SOURCES_PRIMARY = [
   {name:"Gramophone",url:"https://www.gramophone.co.uk",desc:"Rivista britannica di riferimento dal 1923"},
   {name:"BBC Music Magazine",url:"https://www.classical-music.com",desc:"Mensile britannico con classifiche autorevoli"},
   {name:"ClassicsToday",url:"https://www.classicstoday.com",desc:"Sito USA con voto su esecuzione e registrazione"},
+];
+const SOURCES_SECONDARY = [
   {name:"The Guardian",url:"https://www.theguardian.com/music/classicalmusicandopera",desc:"Critica culturale di alto livello, UK"},
   {name:"The Classic Review",url:"https://theclassicreview.com",desc:"Sito internazionale con recensioni approfondite"},
   {name:"ArkivMusic",url:"https://arkivmusic.com",desc:"Database discografico con recensioni accademiche"},
+  {name:"Limelight",url:"https://limelight-arts.com.au",desc:"Rivista australiana di musica classica"},
+  {name:"ClassicalGuy",url:"https://classicalguy.substack.com",desc:"Newsletter specializzata su discografia"},
+  {name:"TalkClassical",url:"https://www.talkclassical.com",desc:"Comunità di appassionati e critici"},
 ];
+const SOURCES = [...SOURCES_PRIMARY,...SOURCES_SECONDARY];
 
 // ── PDF EXPORT ────────────────────────────────────────────────────────────────
 function generatePDF(entry) {
@@ -495,21 +501,30 @@ function LibraryModal({library, activeId, onSelect, onDelete, onClose, onExport}
 // ── SOURCES PANEL ─────────────────────────────────────────────────────────────
 function SourcesPanel() {
   const [open,setOpen]=useState(false);
+  const SrcCard=({s,primary})=>(
+    <a href={s.url} target="_blank" rel="noreferrer" style={{textDecoration:"none"}}>
+      <div style={{background:C.bg,border:`1px solid ${primary?C.gold+"44":C.border}`,borderRadius:4,padding:"7px 9px",position:"relative"}}>
+        {primary&&<span style={{position:"absolute",top:4,right:5,background:C.gold+"22",color:C.gold,fontSize:7,padding:"1px 4px",borderRadius:2,letterSpacing:0.5}}>PRIORITARIA</span>}
+        <div style={{color:primary?C.gold:C.mid,fontSize:11,fontWeight:600,paddingRight:primary?40:0}}>{s.name}</div>
+        <div style={{color:C.muted,fontSize:9,marginTop:2,lineHeight:1.4}}>{s.desc}</div>
+      </div>
+    </a>
+  );
   return (
     <div style={{marginBottom:16}}>
       <button onClick={()=>setOpen(!open)} style={{background:"transparent",border:`1px solid ${C.border}`,color:C.muted,padding:"6px 12px",borderRadius:4,fontSize:11,cursor:"pointer",letterSpacing:1}}>
-        {open?"▲":"▼"} Fonti specializzate ({SOURCES.length})
+        {open?"▲":"▼"} Fonti ({SOURCES_PRIMARY.length} prioritarie + {SOURCES_SECONDARY.length} secondarie)
       </button>
       {open&&(
-        <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:12,marginTop:8,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
-          {SOURCES.map(s=>(
-            <a key={s.name} href={s.url} target="_blank" rel="noreferrer" style={{textDecoration:"none"}}>
-              <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:4,padding:"7px 9px"}}>
-                <div style={{color:C.gold,fontSize:11,fontWeight:600}}>{s.name}</div>
-                <div style={{color:C.muted,fontSize:9,marginTop:2,lineHeight:1.4}}>{s.desc}</div>
-              </div>
-            </a>
-          ))}
+        <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:12,marginTop:8}}>
+          <div style={{color:C.gold,fontSize:9,letterSpacing:1.5,textTransform:"uppercase",marginBottom:7}}>Fonti prioritarie — sempre consultate</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7,marginBottom:12}}>
+            {SOURCES_PRIMARY.map(s=><SrcCard key={s.name} s={s} primary={true}/>)}
+          </div>
+          <div style={{color:C.muted,fontSize:9,letterSpacing:1.5,textTransform:"uppercase",marginBottom:7}}>Fonti secondarie — consultate se necessario</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
+            {SOURCES_SECONDARY.map(s=><SrcCard key={s.name} s={s} primary={false}/>)}
+          </div>
         </div>
       )}
     </div>
@@ -534,10 +549,13 @@ Opera: ${work||"non specificata"}
 Strumento: ${instrument||"non specificato"}
 
 ISTRUZIONI:
-1. Trova le 4-6 migliori registrazioni secondo Gramophone, BBC Music Magazine, ClassicsToday, The Guardian, The Classic Review.
-2. Per OGNI registrazione cerca su qobuz.com l'URL univoco dell'album. Ogni registrazione deve avere un qobuzUrl diverso. Se non trovato usa null.
-3. Rispondi SOLO con JSON puro (no markdown, no backtick):
-{"work":"Compositore - Opera","instrument":"strumento","summary":"intro 2 righe","recommendation":"consiglio finale","recordings":[{"rank":1,"interpreter":"nome","label":"etichetta","year":"anno","books":"volume","execStars":5,"recStars":4,"consensus":"unanime","consensusIcon":"🟢","execNote":"nota esecuzione","recNote":"nota registrazione","criticalNote":"nota critica con citazioni riviste","qobuzUrl":"URL completo qobuz.com oppure null"}]}`;
+1. Cerca prima nelle fonti PRIMARIE: Gramophone, BBC Music Magazine, ClassicsToday.
+   - Se trovi almeno 2 recensioni nelle fonti primarie, usale come base principale.
+   - Se ne trovi meno di 2, allarga la ricerca alle fonti SECONDARIE in ordine di autorevolezza: The Guardian, The Classic Review, ArkivMusic, Limelight, ClassicalGuy, TalkClassical, finché non raggiungi almeno 2 fonti o le hai esaurite tutte.
+2. Indica nel campo "sourcesUsed" l'elenco delle fonti che hanno effettivamente recensito l'opera.
+3. Per OGNI registrazione cerca su qobuz.com l'URL univoco dell'album. Ogni qobuzUrl deve essere diverso. Se non trovato usa null.
+4. Rispondi SOLO con JSON puro (no markdown, no backtick):
+{"work":"Compositore - Opera","instrument":"strumento","summary":"intro 2 righe","recommendation":"consiglio finale","sourcesUsed":["Gramophone","BBC Music Magazine"],"recordings":[{"rank":1,"interpreter":"nome","label":"etichetta","year":"anno","books":"volume","execStars":5,"recStars":4,"consensus":"unanime","consensusIcon":"🟢","execNote":"nota","recNote":"nota","criticalNote":"nota critica con citazioni riviste","qobuzUrl":"URL qobuz.com o null"}]}`;
 
     const callApi=async(useSearch)=>{
       const headers={"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true",...(useSearch?{"anthropic-beta":"web-search-2025-03-05"}:{})};
@@ -609,7 +627,7 @@ function App() {
   const [apiKey,setApiKey]=useState(null);
   const [showSetup,setShowSetup]=useState(false);
   const [library,setLibrary]=useState([]);
-  const [active,setActive]=useState(BUILTIN);
+  const [active,setActive]=useState(null);
   const [expanded,setExpanded]=useState(null);
   const [showLib,setShowLib]=useState(false);
   const [flash,setFlash]=useState(false);
@@ -640,7 +658,7 @@ function App() {
   const handleResults=useCallback(data=>{
     const now=new Date().toLocaleDateString("it-IT",{day:"2-digit",month:"short",year:"numeric"});
     const seenUrls=new Set();
-    const entry={...data,id:`s_${Date.now()}`,savedAt:now,
+    const entry={...data,id:`s_${Date.now()}`,savedAt:now,sourcesUsed:data.sourcesUsed||[],
       recordings:(data.recordings||[]).map((r,i)=>{
         const qobuz=[];
         if(r.qobuzUrl&&r.qobuzUrl!=="null"&&typeof r.qobuzUrl==="string"&&r.qobuzUrl.startsWith("http")&&!seenUrls.has(r.qobuzUrl)){
@@ -668,7 +686,7 @@ function App() {
   const handleDelete=id=>{
     const updated=saveLibrary(libraryRef.current.filter(e=>e.id!==id));
     libraryRef.current=updated;
-    setLibrary(updated);if(active.id===id)setActive(BUILTIN);
+    setLibrary(updated);if(active&&active.id===id)setActive(null);
     window.GH.save(updated,ghRef.current);
   };
 
@@ -681,7 +699,7 @@ function App() {
   if(showSetup) return <SetupScreen onSave={handleSetup}/>;
   if(apiKey===null) return null;
 
-  const isBuiltin=active.id==="builtin_bach_wtc";
+
 
   return (
     <div style={{minHeight:"100vh",background:C.bg,color:C.cream,fontFamily:"'Palatino Linotype',Georgia,serif"}}>
@@ -732,21 +750,32 @@ function App() {
         {/* Results header */}
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14,gap:12}}>
           <div style={{flex:1}}>
-            <div style={{color:C.gold,fontSize:11,letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>{isBuiltin?"Risultati precaricati":"Risultati ricerca"}</div>
+            <div style={{color:C.gold,fontSize:11,letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>{active._builtin?"Precaricato":"Risultati ricerca"}</div>
             <div style={{color:C.cream,fontSize:17,fontStyle:"italic",lineHeight:1.3}}>{active.work}</div>
             {active.instrument&&<div style={{color:C.muted,fontSize:11,marginTop:2}}>{active.instrument}</div>}
             {active.summary&&<div style={{color:C.mid,fontSize:11,marginTop:5,lineHeight:1.65,maxWidth:580}}>{active.summary}</div>}
+            {active.sourcesUsed&&active.sourcesUsed.length>0&&(
+              <div style={{marginTop:6,display:"flex",flexWrap:"wrap",gap:5,alignItems:"center"}}>
+                <span style={{color:C.muted,fontSize:9,letterSpacing:1,textTransform:"uppercase"}}>Fonti usate:</span>
+                {active.sourcesUsed.map(s=>(
+                  <span key={s} style={{background:C.faint,color:C.gold,fontSize:9,padding:"2px 7px",borderRadius:10}}>{s}</span>
+                ))}
+              </div>
+            )}
+            {active.sourcesUsed&&active.sourcesUsed.length===0&&!active._builtin&&(
+              <div style={{marginTop:6,color:C.red,fontSize:10}}>⚠️ Nessuna delle 9 fonti ha recensito questa opera</div>
+            )}
           </div>
           <div style={{display:"flex",gap:8,flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
-            {!isBuiltin&&<button onClick={()=>{setActive(BUILTIN);setExpanded(null);}} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"5px 11px",borderRadius:4,fontSize:11,cursor:"pointer"}}>← Bach / WTC</button>}
+            
             <button onClick={()=>generatePDF(active)} style={{background:"transparent",border:`1px solid ${C.gold}44`,color:C.goldDim,padding:"5px 11px",borderRadius:4,fontSize:11,cursor:"pointer"}} title="Scarica PDF">↓ PDF</button>
           </div>
         </div>
 
         {/* Legend */}
         <div style={{display:"flex",gap:14,marginBottom:12,flexWrap:"wrap"}}>
-          {[["🟢 Unanime",C.green],["🟡 Qualche riserva",C.amber],["🔴 Diviso",C.red]].map(([t,c])=>(
-            <span key={t} style={{color:c,fontSize:10}}>{t}</span>
+          {[["🟢 Unanime",C.green],["🟡 Qualche riserva",C.amber],["🔴 Diviso",C.red]].map(([t,col])=>(
+            <span key={t} style={{color:col,fontSize:10}}>{t}</span>
           ))}
           <span style={{color:"#3a3a3a",fontSize:10,marginLeft:"auto"}}>▼ Clicca per espandere</span>
         </div>
@@ -763,7 +792,7 @@ function App() {
         )}
 
         <div style={{borderTop:`1px solid ${C.bg3}`,marginTop:36,paddingTop:12,color:C.faint,fontSize:10}}>
-          Critica Discografica Specializzata · Maggio 2026 · Biblioteca salvata in questo browser · {library.length}/200 guide
+          Critica Discografica Specializzata · Maggio 2026 · {library.length}/200 guide in biblioteca
         </div>
       </div>
 
