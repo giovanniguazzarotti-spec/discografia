@@ -238,8 +238,7 @@ function Stars({n,size=12}) {
 }
 
 // ── RECORDING CARD ────────────────────────────────────────────────────────────
-
-function Card({rec,expanded,onToggle,work,onSaveQobuz}) {
+function Card({rec,expanded,onToggle,work}) {
   const lvlBg={A:C.cardA,B:C.cardB,C:C.cardC}[rec.level]||C.bg2;
   const cc=rec.consensusIcon==="🟢"?C.green:rec.consensusIcon==="🔴"?C.red:C.amber;
   return (
@@ -496,29 +495,58 @@ function SearchPanel({apiKey,onResults,onNeedKey}) {
     if(!composer.trim()&&!work.trim()) return;
     if(!apiKey){onNeedKey();return;}
     setLoading(true);setError(null);
-    const prompt="Sei un critico musicale. L'utente cerca:\nCompositore: "+(composer||"non specificato")+"\nOpera: "+(work||"non specificata")+"\nStrumento: "+(instrument||"non specificato")+"\n\nFornisci 4-6 migliori registrazioni secondo Gramophone, BBC Music Magazine, ClassicsToday, The Guardian, The Classic Review, ArkivMusic.\nRispondi SOLO con JSON puro (no markdown):\n{\"work\":\"Compositore - Opera\",\"instrument\":\"strumento\",\"summary\":\"intro 2 righe\",\"recommendation\":\"consiglio\",\"recordings\":[{\"rank\":1,\"interpreter\":\"nome\",\"label\":\"etichetta\",\"year\":\"anno\",\"books\":\"volume\",\"execStars\":5,\"recStars\":4,\"consensus\":\"unanime\",\"consensusIcon\":\"🟢\",\"execNote\":\"nota\",\"recNote\":\"nota\",\"criticalNote\":\"nota critica\",\"qobuzUrl\":\"URL completo qobuz.com se lo conosci o null\"}]}";
-    try{
-      const resp=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:2000,messages:[{role:"user",content:prompt}]}),
-      });
-      if(!resp.ok){
-        const err=await resp.json().catch(()=>({}));
-        if(resp.status===401) throw new Error("Chiave API non valida.");
-        if(resp.status===429) throw new Error("⏳ Rate limit — aspetta 1 minuto e riprova.");
-        throw new Error((err.error&&err.error.message)||("Errore "+resp.status));
+    const prompt=`Sei un critico musicale specializzato. L'utente cerca:
+Compositore: ${composer||"non specificato"}
+Opera: ${work||"non specificata"}
+Strumento: ${instrument||"non specificato"}
+
+ISTRUZIONI:
+1. Trova le 4-6 migliori registrazioni secondo Gramophone, BBC Music Magazine, ClassicsToday, The Guardian, The Classic Review.
+2. Per OGNI registrazione cerca separatamente su qobuz.com l'URL univoco di quell'album specifico. Ogni registrazione DEVE avere un qobuzUrl diverso. Se non trovi l'URL specifico usa null.
+3. Rispondi SOLO con JSON puro (no markdown, no backtick):
+{"work":"Compositore - Opera","instrument":"strumento","summary":"intro 2 righe","recommendation":"consiglio finale","recordings":[{"rank":1,"interpreter":"nome","label":"etichetta","year":"anno","books":"volume","execStars":5,"recStars":4,"consensus":"unanime","consensusIcon":"🟢","execNote":"nota esecuzione","recNote":"nota registrazione","criticalNote":"nota critica con citazioni riviste","qobuzUrl":"URL completo qobuz.com oppure null"}]}`;
+
+    const callApi=async(useSearch)=>{
+      const headers={"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true",...(useSearch?{"anthropic-beta":"web-search-2025-03-05"}:{})};
+      const messages=[{role:"user",content:prompt}];
+      let finalText="";
+      let iterations=0;
+      while(iterations<8){
+        iterations++;
+        const body={model:"claude-sonnet-4-5",max_tokens:4000,messages,...(useSearch?{tools:[{type:"web_search_20250305",name:"web_search"}]}:{})};
+        const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers,body:JSON.stringify(body)});
+        if(!resp.ok){const err=await resp.json().catch(()=>({}));const e=new Error(err.error?.message||`Errore ${resp.status}`);e.status=resp.status;throw e;}
+        const data=await resp.json();
+        messages.push({role:"assistant",content:data.content});
+        if(data.stop_reason==="end_turn"){finalText=data.content.filter(b=>b.type==="text").map(b=>b.text).join("");break;}
+        if(data.stop_reason==="tool_use"){
+          const tr=data.content.filter(b=>b.type==="tool_use").map(b=>({type:"tool_result",tool_use_id:b.id,content:"OK"}));
+          if(tr.length) messages.push({role:"user",content:tr});
+          continue;
+        }
+        finalText=data.content.filter(b=>b.type==="text").map(b=>b.text).join("");break;
       }
-      const data=await resp.json();
-      const text=(data.content||[]).map(function(b){return b.text||"";}).join("");
-      const clean=text.replace(/```json|```/g,"").trim();
+      if(!finalText) throw new Error("Nessuna risposta.");
+      const clean=finalText.replace(/```json|```/g,"").trim();
       const a=clean.indexOf("{"),b=clean.lastIndexOf("}");
       if(a===-1||b===-1) throw new Error("Formato non valido.");
-      onResults(JSON.parse(clean.slice(a,b+1)));
+      return JSON.parse(clean.slice(a,b+1));
+    };
+
+    try{
+      let parsed;
+      try{
+        parsed=await callApi(true);
+      }catch(e){
+        if(e.status===401) throw e;
+        setError("⚠️ Ricerca web non disponibile — link Qobuz assenti.");
+        setTimeout(()=>setError(null),4000);
+        parsed=await callApi(false);
+      }
+      onResults(parsed);
     }catch(e){setError(e.message||"Errore. Riprova.");}
     finally{setLoading(false);}
   };
-;
 
   return (
     <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:18,marginBottom:20}}>
@@ -536,7 +564,6 @@ function SearchPanel({apiKey,onResults,onNeedKey}) {
         <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#666":"#0f0d09",border:"none",borderRadius:4,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:loading?"not-allowed":"pointer"}}>
           {loading?<span>⏳ Ricerca in corso…</span>:"Cerca registrazioni"}
         </button>
-        {(composer.trim()||work.trim())&&<button onClick={()=>window.open("https://open.qobuz.com/search?q="+encodeURIComponent((composer+" "+work).trim()),"_blank")} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,borderRadius:4,padding:"8px 14px",fontSize:11,cursor:"pointer"}}>🎵 Cerca su Qobuz</button>}
         {!apiKey&&<span style={{color:C.amber,fontSize:11}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
       </div>
       {error&&<p style={{color:C.red,fontSize:11,marginTop:8,marginBottom:0}}>{error}</p>}
@@ -550,7 +577,7 @@ function App() {
   const [showSetup,setShowSetup]=useState(false);
   const [ghTok,setGhTok]=useState("");
   const [library,setLibrary]=useState([]);
-  const [active,setActive]=useState(null);
+  const [active,setActive]=useState(BUILTIN);
   const [expanded,setExpanded]=useState(null);
   const [showLib,setShowLib]=useState(false);
   const [flash,setFlash]=useState(false);
@@ -591,30 +618,10 @@ function App() {
     setLibrary(updated);setFlash(true);setTimeout(()=>setFlash(false),2500);
   },[]);
 
-  const handleSaveQobuz=useCallback(function(rec,url){
-    if(!active||!active.recordings) return;
-    const updated={...active,recordings:(active.recordings||[]).map(function(r){
-      if(r.rank!==rec.rank||r.interpreter!==rec.interpreter) return r;
-      var seenUrls=new Set((r.qobuz||[]).map(function(q){return q.url;}));
-      if(seenUrls.has(url)) return r;
-      return {...r,qobuz:[...(r.qobuz||[]),{label:"Ascolta",url:url}]};
-    })};
-    setActive(updated);
-    // Salva in biblioteca
-    var libUpdated=(libraryRef.current||[]).map(function(e){
-      if(e.id!==updated.id) return e;
-      return updated;
-    });
-    saveLibrary(libUpdated);
-    libraryRef.current=libUpdated;
-    setLibrary(libUpdated);
-    window.GH.save(libUpdated,window.GH.tok());
-  },[active]);
-
   const handleDelete=id=>{
     const updated=saveLibrary(libraryRef.current.filter(e=>e.id!==id));
     libraryRef.current=updated;
-    setLibrary(updated);if(active&&active.id===id)setActive(null);
+    setLibrary(updated);if(active.id===id)setActive(BUILTIN);
   };
 
   const handleImport=guides=>{
@@ -626,7 +633,7 @@ function App() {
   if(showSetup) return <SetupScreen onSave={handleSetup}/>;
   if(apiKey===null) return null;
 
-  const isBuiltin=active&&active.id==="builtin_bach_wtc";
+  const isBuiltin=active.id==="builtin_bach_wtc";
 
   return (
     <div style={{minHeight:"100vh",background:C.bg,color:C.cream,fontFamily:"'Palatino Linotype',Georgia,serif"}}>
@@ -649,7 +656,7 @@ function App() {
               </div>
               {flash&&<span className="flash" style={{color:C.green,fontSize:10}}>✓ Salvata</span>}
               {apiKey&&<span onClick={()=>setShowSetup(true)} style={{color:"#4a8a5a",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",marginTop:6,display:"block"}}>🔑 API configurata</span>}
-              <span onClick={()=>{const t=prompt("GitHub Token:",ghTok);if(t!==null){window.GH.save(t);setGhTok(t);}}} style={{color:ghTok?"#4a8a5a":"#c9a84c",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",marginTop:4,display:"block"}}>{ghTok?"📂 GitHub configurato":"📂 Configura GitHub"}</span>
+              <span onClick={()=>{var t=prompt("GitHub Token:",ghTok);if(t!==null){window.GH.save(t);setGhTok(t);}}} style={{color:ghTok?"#4a8a5a":"#c9a84c",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",marginTop:4,display:"block"}}>{ghTok?"📂 GitHub configurato":"📂 Configura GitHub"}</span>
             </div>
           </div>
         </div>
@@ -659,36 +666,57 @@ function App() {
         <SearchPanel apiKey={apiKey} onResults={handleResults} onNeedKey={()=>setShowSetup(true)}/>
         <SourcesPanel/>
 
-        {active&&<>
+        {/* Results header */}
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14,gap:12}}>
           <div style={{flex:1}}>
-            <div style={{color:C.gold,fontSize:11,letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>{isBuiltin?"Precaricato":"Risultati ricerca"}</div>
+            <div style={{color:C.gold,fontSize:11,letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>{isBuiltin?"Risultati precaricati":"Risultati ricerca"}</div>
             <div style={{color:C.cream,fontSize:17,fontStyle:"italic",lineHeight:1.3}}>{active.work}</div>
             {active.instrument&&<div style={{color:C.muted,fontSize:11,marginTop:2}}>{active.instrument}</div>}
             {active.summary&&<div style={{color:C.mid,fontSize:11,marginTop:5,lineHeight:1.65,maxWidth:580}}>{active.summary}</div>}
           </div>
-          <div style={{display:"flex",gap:8,flexShrink:0}}>
-            <button onClick={()=>{setActive(null);setExpanded(null);}} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"5px 11px",borderRadius:4,fontSize:11,cursor:"pointer"}}>× Chiudi</button>
+          <div style={{display:"flex",gap:8,flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
+            {!isBuiltin&&<button onClick={()=>{setActive(BUILTIN);setExpanded(null);}} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"5px 11px",borderRadius:4,fontSize:11,cursor:"pointer"}}>← Bach / WTC</button>}
+            <button onClick={()=>generatePDF(active)} style={{background:"transparent",border:`1px solid ${C.gold}44`,color:C.goldDim,padding:"5px 11px",borderRadius:4,fontSize:11,cursor:"pointer"}} title="Scarica PDF">↓ PDF</button>
           </div>
         </div>
+
+        {/* Legend */}
         <div style={{display:"flex",gap:14,marginBottom:12,flexWrap:"wrap"}}>
-          {[["🟢 Unanime",C.green],["🟡 Qualche riserva",C.amber],["🔴 Diviso",C.red]].map(function(item){return(
-            <span key={item[0]} style={{color:item[1],fontSize:10}}>{item[0]}</span>
-          );})}<span style={{color:"#3a3a3a",fontSize:10,marginLeft:"auto"}}>▼ Clicca per espandere</span>
+          {[["🟢 Unanime",C.green],["🟡 Qualche riserva",C.amber],["🔴 Diviso",C.red]].map(([t,c])=>(
+            <span key={t} style={{color:c,fontSize:10}}>{t}</span>
+          ))}
+          <span style={{color:"#3a3a3a",fontSize:10,marginLeft:"auto"}}>▼ Clicca per espandere</span>
         </div>
-        {(active.recordings||[]).map(function(rec,i){return(
-          <Card key={i} rec={rec} expanded={expanded===i} onToggle={function(){setExpanded(expanded===i?null:i);}} work={active.work} onSaveQobuz={handleSaveQobuz}/>
-        );})}
+
+        {(active.recordings||[]).map((rec,i)=>(
+          <Card key={i} rec={rec} expanded={expanded===i} onToggle={()=>setExpanded(expanded===i?null:i)} work={active.work}/>
+        ))}
+
         {active.recommendation&&(
           <div style={{background:C.bg2,border:`1px solid ${C.borderGold}`,borderRadius:6,padding:"12px 16px",marginTop:14}}>
             <div style={{color:C.gold,fontSize:9,letterSpacing:2,textTransform:"uppercase",marginBottom:5}}>💡 Consiglio finale</div>
             <p style={{color:C.mid,fontSize:12,margin:0,lineHeight:1.7}}>{active.recommendation}</p>
           </div>
         )}
-        </>}
+
         <div style={{borderTop:`1px solid ${C.bg3}`,marginTop:36,paddingTop:12,color:C.faint,fontSize:10}}>
           Critica Discografica Specializzata · Maggio 2026 · Biblioteca salvata in questo browser · {library.length}/200 guide
         </div>
       </div>
 
-        
+      {/* Library modal */}
+      {showLib&&<LibraryModal
+        library={library} activeId={active.id}
+        onSelect={e=>{setActive(e);setExpanded(null);}}
+        onDelete={handleDelete}
+        onClose={()=>setShowLib(false)}
+        onExport={()=>exportLibrary(library)}
+      />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
