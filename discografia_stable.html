@@ -659,57 +659,36 @@ function App() {
         <SearchPanel apiKey={apiKey} onResults={handleResults} onNeedKey={()=>setShowSetup(true)}/>
         <SourcesPanel/>
 
-        {/* Results header */}
+        {active&&<>
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14,gap:12}}>
           <div style={{flex:1}}>
-            <div style={{color:C.gold,fontSize:11,letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>{isBuiltin?"Risultati precaricati":"Risultati ricerca"}</div>
+            <div style={{color:C.gold,fontSize:11,letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>{isBuiltin?"Precaricato":"Risultati ricerca"}</div>
             <div style={{color:C.cream,fontSize:17,fontStyle:"italic",lineHeight:1.3}}>{active.work}</div>
             {active.instrument&&<div style={{color:C.muted,fontSize:11,marginTop:2}}>{active.instrument}</div>}
             {active.summary&&<div style={{color:C.mid,fontSize:11,marginTop:5,lineHeight:1.65,maxWidth:580}}>{active.summary}</div>}
           </div>
-          <div style={{display:"flex",gap:8,flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
-            {!isBuiltin&&<button onClick={()=>{setActive(BUILTIN);setExpanded(null);}} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"5px 11px",borderRadius:4,fontSize:11,cursor:"pointer"}}>← Bach / WTC</button>}
-            <button onClick={()=>generatePDF(active)} style={{background:"transparent",border:`1px solid ${C.gold}44`,color:C.goldDim,padding:"5px 11px",borderRadius:4,fontSize:11,cursor:"pointer"}} title="Scarica PDF">↓ PDF</button>
+          <div style={{display:"flex",gap:8,flexShrink:0}}>
+            <button onClick={()=>{setActive(null);setExpanded(null);}} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"5px 11px",borderRadius:4,fontSize:11,cursor:"pointer"}}>× Chiudi</button>
           </div>
         </div>
-
-        {/* Legend */}
         <div style={{display:"flex",gap:14,marginBottom:12,flexWrap:"wrap"}}>
-          {[["🟢 Unanime",C.green],["🟡 Qualche riserva",C.amber],["🔴 Diviso",C.red]].map(([t,c])=>(
-            <span key={t} style={{color:c,fontSize:10}}>{t}</span>
-          ))}
-          <span style={{color:"#3a3a3a",fontSize:10,marginLeft:"auto"}}>▼ Clicca per espandere</span>
+          {[["🟢 Unanime",C.green],["🟡 Qualche riserva",C.amber],["🔴 Diviso",C.red]].map(function(item){return(
+            <span key={item[0]} style={{color:item[1],fontSize:10}}>{item[0]}</span>
+          );})}<span style={{color:"#3a3a3a",fontSize:10,marginLeft:"auto"}}>▼ Clicca per espandere</span>
         </div>
-
-        {(active.recordings||[]).map((rec,i)=>(
-          <Card key={i} rec={rec} expanded={expanded===i} onToggle={()=>setExpanded(expanded===i?null:i)} work={active.work} onSaveQobuz={handleSaveQobuz}/>
-        ))}
-
+        {(active.recordings||[]).map(function(rec,i){return(
+          <Card key={i} rec={rec} expanded={expanded===i} onToggle={function(){setExpanded(expanded===i?null:i);}} work={active.work} onSaveQobuz={handleSaveQobuz}/>
+        );})}
         {active.recommendation&&(
           <div style={{background:C.bg2,border:`1px solid ${C.borderGold}`,borderRadius:6,padding:"12px 16px",marginTop:14}}>
             <div style={{color:C.gold,fontSize:9,letterSpacing:2,textTransform:"uppercase",marginBottom:5}}>💡 Consiglio finale</div>
             <p style={{color:C.mid,fontSize:12,margin:0,lineHeight:1.7}}>{active.recommendation}</p>
           </div>
         )}
-
+        </>}
         <div style={{borderTop:`1px solid ${C.bg3}`,marginTop:36,paddingTop:12,color:C.faint,fontSize:10}}>
           Critica Discografica Specializzata · Maggio 2026 · Biblioteca salvata in questo browser · {library.length}/200 guide
         </div>
       </div>
 
-      {/* Library modal */}
-      {showLib&&<LibraryModal
-        library={library} activeId={active.id}
-        onSelect={e=>{setActive(e);setExpanded(null);}}
-        onDelete={handleDelete}
-        onClose={()=>setShowLib(false)}
-        onExport={()=>exportLibrary(library)}
-      />}
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script>
-</body>
-</html>
+        
