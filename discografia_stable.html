@@ -238,7 +238,7 @@ function Stars({n,size=12}) {
 }
 
 // ── RECORDING CARD ────────────────────────────────────────────────────────────
-function Card({rec,expanded,onToggle,work,onSave}) {
+function Card({rec,expanded,onToggle,work}) {
   const lvlBg={A:C.cardA,B:C.cardB,C:C.cardC}[rec.level]||C.bg2;
   const cc=rec.consensusIcon==="🟢"?C.green:rec.consensusIcon==="🔴"?C.red:C.amber;
   return (
@@ -287,12 +287,6 @@ function Card({rec,expanded,onToggle,work,onSave}) {
                 🎵 {q.label}<span style={{background:"#0e2a1a",border:"1px solid #1a5a30",borderRadius:3,padding:"1px 5px",fontSize:9,color:"#4acf7a"}}>apri app</span>
               </button>;
             })}
-            <button onClick={e=>{e.stopPropagation();window.open("intent://search?q="+encodeURIComponent(rec.interpreter+" "+work)+"#Intent;scheme=qobuz;package=com.qobuz.music;S.browser_fallback_url="+encodeURIComponent("https://www.qobuz.com/search?q="+encodeURIComponent(rec.interpreter+" "+work))+";end","_blank");}} style={{background:"#1a2a3a",border:"1px solid #2a4a5a",color:"#7aafd0",padding:"4px 10px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>🔍 Qobuz</button>
-            {onSave&&<span style={{display:"inline-flex",gap:4,alignItems:"center"}}>
-              <input id={"qi-"+rec.rank} placeholder="Incolla URL Qobuz..." onClick={e=>e.stopPropagation()}
-                style={{background:"#0a0806",border:"1px solid #2a5a2a",color:"#f0ead6",padding:"4px 8px",borderRadius:4,fontSize:10,outline:"none",width:180}}/>
-              <button onClick={e=>{e.stopPropagation();var inp=document.getElementById("qi-"+rec.rank);var url=inp?inp.value.trim():"";if(url.startsWith("http")){onSave(rec,url);inp.value="";}}} style={{background:"#1a3a1a",border:"1px solid #2a5a2a",color:"#7acf9a",padding:"4px 8px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>Salva</button>
-            </span>}
             {(rec.reviews||[]).map((r,i)=>(
               <button key={i}
                 onClick={e=>{e.stopPropagation();e.preventDefault();window.open(r.url,"_blank","noopener,noreferrer");}}
@@ -490,7 +484,7 @@ function SourcesPanel() {
 }
 
 // ── SEARCH PANEL ──────────────────────────────────────────────────────────────
-function SearchPanel({apiKey,onResults,onNeedKey}) {
+function SearchPanel({apiKey,onResults,onQobuzLinks,active,onNeedKey}) {
   const [composer,setComposer]=useState("");
   const [work,setWork]=useState("");
   const [instrument,setInstrument]=useState("");
@@ -498,23 +492,42 @@ function SearchPanel({apiKey,onResults,onNeedKey}) {
   const [error,setError]=useState(null);
 
   const search=async()=>{
-    if(!composer.trim()&&!work.trim()) return;
+    if(!composer.trim()&&!work.trim())return;
     if(!apiKey){onNeedKey();return;}
     setLoading(true);setError(null);
-    var p="Sei un critico musicale. Cerca:\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n\n4-6 migliori registrazioni secondo Gramophone, BBC Music, ClassicsToday, Guardian, Classic Review. Includi qobuzUrl se noto.\nJSON: {\"work\":\"x\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null}]}";
+    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 migliori registrazioni Gramophone, BBC, ClassicsToday, Guardian, Classic Review. qobuzUrl se noto.\nJSON: {\"work\":\"x\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null}]}";
     try{
-      var resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:2000,messages:[{role:"user",content:p}]})});
-      if(!resp.ok){var err=await resp.json().catch(function(){return{};});if(resp.status===401)throw new Error("Chiave API non valida.");if(resp.status===429)throw new Error("Rate limit — aspetta 1 min.");throw new Error((err.error&&err.error.message)||"Errore "+resp.status);}
-      var data=await resp.json();
-      var text=(data.content||[]).map(function(b){return b.text||"";}).join("");
-      var clean=text.replace(/```json|```/g,"").trim();
-      var a=clean.indexOf("{"),b=clean.lastIndexOf("}");
+      var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:2000,messages:[{role:"user",content:p}]})});
+      if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
+      var d=await r.json();var t=(d.content||[]).map(function(b){return b.text||"";}).join("");
+      var cl=t.replace(/```json|```/g,"").trim();var a=cl.indexOf("{"),b=cl.lastIndexOf("}");
       if(a<0||b<0)throw new Error("Formato non valido.");
-      onResults(JSON.parse(clean.slice(a,b+1)));
+      onResults(JSON.parse(cl.slice(a,b+1)));
     }catch(e){setError(e.message||"Errore.");}
     finally{setLoading(false);}
   };
 
+  const searchQobuzLinks=async(recs)=>{
+    if(!apiKey||!recs||!recs.length)return;
+    setLoading(true);setError(null);
+    var p="Trova URL qobuz.com per: "+recs.map(function(r){return r.interpreter+" "+r.year;}).join(", ")+". JSON: {\"links\":[{\"interpreter\":\"x\",\"qobuzUrl\":\"url o null\"}]}";
+    try{
+      var h={"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true","anthropic-beta":"web-search-2025-03-05"};
+      var msgs=[{role:"user",content:p}];var ft="";var it=0;
+      while(it<5){it++;
+        var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:h,body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:600,messages:msgs,tools:[{type:"web_search_20250305",name:"web_search"}]})});
+        if(!r.ok){var er=await r.json().catch(function(){return{};});throw new Error(r.status===429?"Rate limit":((er.error&&er.error.message)||"Errore"));}
+        var d=await r.json();msgs.push({role:"assistant",content:d.content});
+        if(d.stop_reason==="end_turn"){ft=d.content.filter(function(b){return b.type==="text";}).map(function(b){return b.text;}).join("");break;}
+        if(d.stop_reason==="tool_use"){var tr=d.content.filter(function(b){return b.type==="tool_use";}).map(function(b){return{type:"tool_result",tool_use_id:b.id,content:"OK"};});msgs.push({role:"user",content:tr});}
+        else{ft=d.content.filter(function(b){return b.type==="text";}).map(function(b){return b.text;}).join("");break;}
+      }
+      var cl=ft.replace(/```json|```/g,"").trim();var a=cl.indexOf("{"),b=cl.lastIndexOf("}");
+      if(a<0||b<0)throw new Error("Formato.");
+      onQobuzLinks(JSON.parse(cl.slice(a,b+1)).links||[]);
+    }catch(e){setError(e.message||"Errore.");}
+    finally{setLoading(false);}
+  };
   return (
     <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:18,marginBottom:20}}>
       <h3 style={{color:C.gold,margin:"0 0 14px",fontSize:13,letterSpacing:2,textTransform:"uppercase"}}>🔍 Cerca nuova opera</h3>
@@ -531,6 +544,7 @@ function SearchPanel({apiKey,onResults,onNeedKey}) {
         <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#666":"#0f0d09",border:"none",borderRadius:4,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:loading?"not-allowed":"pointer"}}>
           {loading?<span>⏳ Ricerca in corso…</span>:"Cerca registrazioni"}
         </button>
+        {onQobuzLinks&&active&&active.recordings&&<button onClick={()=>searchQobuzLinks(active.recordings)} disabled={loading} style={{background:"transparent",border:`1px solid ${C.faint}`,color:"#7aafd0",borderRadius:4,padding:"8px 14px",fontSize:11,cursor:"pointer"}}>🔗 Link Qobuz</button>}
         {!apiKey&&<span style={{color:C.amber,fontSize:11}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
       </div>
       {error&&<p style={{color:C.red,fontSize:11,marginTop:8,marginBottom:0}}>{error}</p>}
@@ -544,7 +558,7 @@ function App() {
   const [showSetup,setShowSetup]=useState(false);
   const [ghTok,setGhTok]=useState("");
   const [library,setLibrary]=useState([]);
-  const [active,setActive]=useState(null);
+  const [active,setActive]=useState(BUILTIN);
   const [expanded,setExpanded]=useState(null);
   const [showLib,setShowLib]=useState(false);
   const [flash,setFlash]=useState(false);
@@ -585,24 +599,23 @@ function App() {
     setLibrary(updated);setFlash(true);setTimeout(()=>setFlash(false),2500);
   },[]);
 
-  const handleSaveQobuz=function(rec,url){
-    if(!active||!active.recordings) return;
-    var updated={...active,recordings:active.recordings.map(function(r){
-      if(r.rank!==rec.rank||r.interpreter!==rec.interpreter) return r;
-      var exists=(r.qobuz||[]).some(function(q){return q.url===url;});
-      if(exists) return r;
-      return {...r,qobuz:[...(r.qobuz||[]),{label:"Ascolta",url:url}]};
-    })};
-    setActive(updated);
-    var libUpdated=libraryRef.current.map(function(e){return e.id===updated.id?updated:e;});
-    saveLibrary(libUpdated);libraryRef.current=libUpdated;setLibrary(libUpdated);
-    window.GH.save(libUpdated,window.GH.tok());
+  const handleQobuzLinks=function(links){
+    if(!active||!links||!links.length)return;
+    var m={};links.forEach(function(l){if(l.qobuzUrl&&l.qobuzUrl.startsWith("http"))m[l.interpreter]=l.qobuzUrl;});
+    var upd={...active,recordings:(active.recordings||[]).map(function(r){var u=m[r.interpreter];if(!u||(r.qobuz||[]).some(function(q){return q.url===u;}))return r;return {...r,qobuz:[...(r.qobuz||[]),{label:"Ascolta",url:u}]};})};
+    setActive(upd);var lu=libraryRef.current.map(function(e){return e.id===upd.id?upd:e;});
+    saveLibrary(lu);libraryRef.current=lu;setLibrary(lu);window.GH.save(lu,window.GH.tok());
   };
-
+  const handleSaveQobuz=function(rec,url){
+    if(!active||!active.recordings)return;
+    var upd={...active,recordings:active.recordings.map(function(r){if(r.rank!==rec.rank||r.interpreter!==rec.interpreter)return r;if((r.qobuz||[]).some(function(q){return q.url===url;}))return r;return {...r,qobuz:[...(r.qobuz||[]),{label:"Ascolta",url:url}]};})};
+    setActive(upd);var lu=libraryRef.current.map(function(e){return e.id===upd.id?upd:e;});
+    saveLibrary(lu);libraryRef.current=lu;setLibrary(lu);window.GH.save(lu,window.GH.tok());
+  };
   const handleDelete=id=>{
     const updated=saveLibrary(libraryRef.current.filter(e=>e.id!==id));
     libraryRef.current=updated;
-    setLibrary(updated);if(active&&active.id===id)setActive(null);
+    setLibrary(updated);if(active.id===id)setActive(BUILTIN);
   };
 
   const handleImport=guides=>{
@@ -614,7 +627,7 @@ function App() {
   if(showSetup) return <SetupScreen onSave={handleSetup}/>;
   if(apiKey===null) return null;
 
-  const isBuiltin=!!(active&&active.id==="builtin_bach_wtc");
+  const isBuiltin=active.id==="builtin_bach_wtc";
 
   return (
     <div style={{minHeight:"100vh",background:C.bg,color:C.cream,fontFamily:"'Palatino Linotype',Georgia,serif"}}>
@@ -644,10 +657,9 @@ function App() {
       </div>
 
       <div style={{maxWidth:880,margin:"0 auto",padding:"22px 24px"}}>
-        <SearchPanel apiKey={apiKey} onResults={handleResults} onNeedKey={()=>setShowSetup(true)}/>
+        <SearchPanel apiKey={apiKey} onResults={handleResults} onQobuzLinks={handleQobuzLinks} active={active} onNeedKey={()=>setShowSetup(true)}/>
         <SourcesPanel/>
 
-        {active&&<div>
         {/* Results header */}
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14,gap:12}}>
           <div style={{flex:1}}>
@@ -671,7 +683,7 @@ function App() {
         </div>
 
         {(active.recordings||[]).map((rec,i)=>(
-          <Card key={i} rec={rec} expanded={expanded===i} onToggle={()=>setExpanded(expanded===i?null:i)} work={active.work} onSave={handleSaveQobuz}/>
+          <Card key={i} rec={rec} expanded={expanded===i} onToggle={()=>setExpanded(expanded===i?null:i)} work={active.work}/>
         ))}
 
         {active.recommendation&&(
@@ -681,7 +693,6 @@ function App() {
           </div>
         )}
 
-        </div>}
         <div style={{borderTop:`1px solid ${C.bg3}`,marginTop:36,paddingTop:12,color:C.faint,fontSize:10}}>
           Critica Discografica Specializzata · Maggio 2026 · Biblioteca salvata in questo browser · {library.length}/200 guide
         </div>
@@ -689,7 +700,7 @@ function App() {
 
       {/* Library modal */}
       {showLib&&<LibraryModal
-        library={library} activeId={active&&active.id}
+        library={library} activeId={active.id}
         onSelect={e=>{setActive(e);setExpanded(null);}}
         onDelete={handleDelete}
         onClose={()=>setShowLib(false)}
