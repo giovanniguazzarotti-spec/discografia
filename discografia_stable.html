@@ -287,8 +287,12 @@ function Card({rec,expanded,onToggle,work,onSave}) {
                 🎵 {q.label}<span style={{background:"#0e2a1a",border:"1px solid #1a5a30",borderRadius:3,padding:"1px 5px",fontSize:9,color:"#4acf7a"}}>apri app</span>
               </button>;
             })}
-            <button onClick={e=>{e.stopPropagation();window.open("https://open.qobuz.com/search?q="+encodeURIComponent(rec.interpreter+" "+work),"_blank");}} style={{background:"#1a2a3a",border:"1px solid #2a4a5a",color:"#7aafd0",padding:"4px 10px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>🔍 Qobuz</button>
-            {onSave&&<button onClick={e=>{e.stopPropagation();var url=prompt("Incolla URL Qobuz per "+rec.interpreter+":");if(url&&url.startsWith("http"))onSave(rec,url);}} style={{background:"#1a3a1a",border:"1px solid #2a5a2a",color:"#7acf9a",padding:"4px 10px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>+ Salva link</button>}
+            <button onClick={e=>{e.stopPropagation();window.open("intent://search?q="+encodeURIComponent(rec.interpreter+" "+work)+"#Intent;scheme=qobuz;package=com.qobuz.music;S.browser_fallback_url="+encodeURIComponent("https://www.qobuz.com/search?q="+encodeURIComponent(rec.interpreter+" "+work))+";end","_blank");}} style={{background:"#1a2a3a",border:"1px solid #2a4a5a",color:"#7aafd0",padding:"4px 10px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>🔍 Qobuz</button>
+            {onSave&&<span style={{display:"inline-flex",gap:4,alignItems:"center"}}>
+              <input id={"qi-"+rec.rank} placeholder="Incolla URL Qobuz..." onClick={e=>e.stopPropagation()}
+                style={{background:"#0a0806",border:"1px solid #2a5a2a",color:"#f0ead6",padding:"4px 8px",borderRadius:4,fontSize:10,outline:"none",width:180}}/>
+              <button onClick={e=>{e.stopPropagation();var inp=document.getElementById("qi-"+rec.rank);var url=inp?inp.value.trim():"";if(url.startsWith("http")){onSave(rec,url);inp.value="";}}} style={{background:"#1a3a1a",border:"1px solid #2a5a2a",color:"#7acf9a",padding:"4px 8px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>Salva</button>
+            </span>}
             {(rec.reviews||[]).map((r,i)=>(
               <button key={i}
                 onClick={e=>{e.stopPropagation();e.preventDefault();window.open(r.url,"_blank","noopener,noreferrer");}}
