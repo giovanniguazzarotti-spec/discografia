@@ -239,27 +239,6 @@ function Stars({n,size=12}) {
 
 // ── RECORDING CARD ────────────────────────────────────────────────────────────
 
-function QobuzInput({rec,onSave}) {
-  const [open,setOpen]=useState(false);
-  const [url,setUrl]=useState("");
-  if(!open) return (
-    <button onClick={e=>{e.stopPropagation();setOpen(true);}}
-      style={{background:"#1a2a1a",border:"1px solid #2a4a2a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>
-      + Aggiungi link
-    </button>
-  );
-  return (
-    <span style={{display:"inline-flex",gap:4,alignItems:"center"}} onClick={e=>e.stopPropagation()}>
-      <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://www.qobuz.com/..."
-        style={{background:"#0a0806",border:"1px solid #2a4a2a",color:"#f0ead6",padding:"4px 8px",borderRadius:4,fontSize:10,outline:"none",width:200}}/>
-      <button onClick={e=>{e.stopPropagation();if(url.trim().startsWith("http")){onSave(rec,url.trim());setOpen(false);setUrl("");}}}
-        style={{background:"#1a4a1a",border:"1px solid #2a6a2a",color:"#7acf9a",padding:"4px 10px",borderRadius:4,fontSize:10,cursor:"pointer"}}>Salva</button>
-      <button onClick={e=>{e.stopPropagation();setOpen(false);setUrl("");}}
-        style={{background:"transparent",border:"1px solid #3a2020",color:"#8a5050",padding:"4px 8px",borderRadius:4,fontSize:10,cursor:"pointer"}}>×</button>
-    </span>
-  );
-}
-
 function Card({rec,expanded,onToggle,work,onSaveQobuz}) {
   const lvlBg={A:C.cardA,B:C.cardB,C:C.cardC}[rec.level]||C.bg2;
   const cc=rec.consensusIcon==="🟢"?C.green:rec.consensusIcon==="🔴"?C.red:C.amber;
