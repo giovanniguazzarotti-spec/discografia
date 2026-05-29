@@ -555,6 +555,7 @@ function App() {
         return {
           rank:r.rank||i+1,level:r.execStars>=5?"A":r.execStars>=4?"B":"C",
           interpreter:r.interpreter||"—",label:r.label||"—",year:r.year||"—",books:r.books||"—",
+          albumTitle:r.albumTitle||"",digitalEdition:r.digitalEdition||"",
           consensus:r.consensus||"—",consensusIcon:r.consensusIcon||"🟡",
           execStars:r.execStars||3,recStars:r.recStars||3,
           execNote:r.execNote||"",recNote:r.recNote||"",criticalNote:r.criticalNote||"",
