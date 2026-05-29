@@ -125,17 +125,14 @@ const SOURCES = [
   {name:"ClassicsToday",url:"https://www.classicstoday.com",desc:"Sito USA con voto su esecuzione e registrazione"},
   {name:"The Guardian",url:"https://www.theguardian.com/music/classicalmusicandopera",desc:"Critica culturale di alto livello, UK"},
   {name:"The Classic Review",url:"https://theclassicreview.com",desc:"Sito internazionale con recensioni approfondite"},
-  {name:"Limelight",url:"https://limelight-arts.com.au",desc:"Rivista australiana di musica classica"},
   {name:"ArkivMusic",url:"https://arkivmusic.com",desc:"Database discografico con recensioni accademiche"},
-  {name:"ClassicalGuy",url:"https://classicalguy.substack.com",desc:"Newsletter specializzata su discografia classica"},
-  {name:"TalkClassical",url:"https://www.talkclassical.com",desc:"Comunità di appassionati e critici"},
 ];
 
 // ── PDF EXPORT ────────────────────────────────────────────────────────────────
 function generatePDF(entry) {
   const lines=[];
   lines.push("CRITICA DISCOGRAFICA SPECIALIZZATA");
-  lines.push("Fonti: Gramophone, BBC Music Magazine, ClassicsToday, The Guardian, The Classic Review, Limelight, ArkivMusic");
+  lines.push("Fonti: Gramophone, BBC Music Magazine, ClassicsToday, The Guardian, The Classic Review, ArkivMusic");
   lines.push("");
   lines.push((entry.work||"").toUpperCase());
   if(entry.instrument) lines.push("Strumento: "+entry.instrument);
@@ -252,6 +249,7 @@ function Card({rec,expanded,onToggle,work,onSave}) {
             <span style={{color:cc,fontSize:11}}>{rec.consensusIcon} {rec.consensus}</span>
           </div>
           <div style={{color:C.muted,fontSize:11,marginTop:2}}>{rec.label} · {rec.year} · {rec.books}</div>
+          {rec.albumTitle&&<div style={{color:"#7a9a7a",fontSize:10,marginTop:2,fontStyle:"italic"}}>{rec.albumTitle}</div>}
         </div>
         <div style={{display:"flex",gap:14}}>
           {[["Esec.",rec.execStars],["Reg.",rec.recStars]].map(([l,n])=>(
@@ -278,7 +276,8 @@ function Card({rec,expanded,onToggle,work,onSave}) {
             <p style={{color:C.mid,fontSize:11,margin:0,lineHeight:1.65}}>{rec.criticalNote}</p>
           </div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
-            <button onClick={e=>{e.stopPropagation();window.open("https://open.qobuz.com","_blank","noopener,noreferrer");}} style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>🎵 Apri Qobuz</button>
+            <button onClick={e=>{e.stopPropagation();var q=encodeURIComponent((rec.albumTitle||rec.interpreter)+" "+(rec.albumTitle?"":work));window.open("https://www.qobuz.com/search?q="+q,"_blank");}} style={{background:"#1a2a3a",border:"1px solid #2a4a6a",color:"#7aafd0",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>🌐 Qobuz Web</button>
+            <button onClick={e=>{e.stopPropagation();window.open("https://open.qobuz.com","_blank");}} style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>📱 Apri app</button>
             {(rec.qobuz||[]).filter(q=>q.url).map((q,i)=>{var app=toOpenQobuz(q.url);return app?<button key={i} onClick={e=>{e.stopPropagation();window.open(app,"_blank");}} style={{background:"#0e2a1a",border:"1px solid #1a5a30",color:"#4acf7a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>🎵 Ascolta</button>:null;})}
             {onSave&&<span style={{display:"inline-flex",gap:4,alignItems:"center"}} onClick={e=>e.stopPropagation()}><input id={"qu-"+rec.rank} placeholder="Incolla URL Qobuz..." style={{background:"#0a0806",border:"1px solid #2a5a2a",color:"#f0ead6",padding:"4px 8px",borderRadius:4,fontSize:10,outline:"none",width:180}}/><button onClick={e=>{e.stopPropagation();var inp=document.getElementById("qu-"+rec.rank);var raw=inp?inp.value.trim():"";var qm=raw.match(/https:\/\/open\.qobuz\.com\/album\/[\w]+/);var url=qm?qm[0]:(raw.startsWith("http")?raw:"");if(url){onSave(rec,url);inp.value="";}}} style={{background:"#1a3a1a",border:"1px solid #2a5a2a",color:"#7acf9a",padding:"4px 8px",borderRadius:4,fontSize:10,cursor:"pointer"}}>💾</button></span>}
             {(rec.reviews||[]).map((r,i)=>(
@@ -489,7 +488,7 @@ function SearchPanel({apiKey,onResults,onNeedKey}) {
     if(!composer.trim()&&!work.trim())return;
     if(!apiKey){onNeedKey();return;}
     setLoading(true);setError(null);
-    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 migliori registrazioni Gramophone, BBC, ClassicsToday, Guardian, Classic Review. qobuzUrl se noto.\nJSON COMPATTO senza newline: {\"work\":\"x\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null}]}";
+    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 migliori registrazioni Gramophone, BBC, ClassicsToday, Guardian, Classic Review. qobuzUrl se noto.\nJSON COMPATTO senza newline: {\"work\":\"x\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"albumTitle\":\"titolo esatto album su Qobuz\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null}]}";
     try{
       var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:3000,messages:[{role:"user",content:p}]})});
       if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit — aspetta 1 min.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
@@ -602,7 +601,7 @@ function App() {
             <div style={{flex:1,minWidth:0}}>
               <div style={{color:C.gold,fontSize:8,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Guida alle Registrazioni · Musica Classica</div>
               <h1 style={{margin:0,fontSize:17,fontWeight:400,color:C.cream,lineHeight:1.2}}>Critica Discografica Specializzata</h1>
-              <p style={{color:C.muted,fontSize:9,margin:"4px 0 0",lineHeight:1.5}}>Gramophone · BBC Music · ClassicsToday · The Guardian · Limelight</p>
+              <p style={{color:C.muted,fontSize:9,margin:"4px 0 0",lineHeight:1.5}}>Gramophone · BBC Music Magazine · ClassicsToday · The Guardian · The Classic Review · ArkivMusic</p>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end",flexShrink:0}}>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
