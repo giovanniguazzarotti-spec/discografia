@@ -250,6 +250,7 @@ function Card({rec,expanded,onToggle,work,onSave}) {
           </div>
           <div style={{color:C.muted,fontSize:11,marginTop:2}}>{rec.label} · {rec.year} · {rec.books}</div>
           {rec.albumTitle&&<div style={{color:"#7a9a7a",fontSize:10,marginTop:2,fontStyle:"italic"}}>{rec.albumTitle}</div>}
+          {rec.digitalEdition&&<div style={{color:"#6a8a9a",fontSize:10,marginTop:1}}>💿 {rec.digitalEdition}</div>}
         </div>
         <div style={{display:"flex",gap:14}}>
           {[["Esec.",rec.execStars],["Reg.",rec.recStars]].map(([l,n])=>(
@@ -276,7 +277,7 @@ function Card({rec,expanded,onToggle,work,onSave}) {
             <p style={{color:C.mid,fontSize:11,margin:0,lineHeight:1.65}}>{rec.criticalNote}</p>
           </div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
-            {(rec.qobuz||[]).filter(q=>q.url).map((q,i)=>{var app=toOpenQobuz(q.url);return app?<button key={i} onClick={e=>{e.stopPropagation();window.open(app,"_blank");}} style={{background:"#0e2a1a",border:"1px solid #1a5a30",color:"#4acf7a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>🎵 Ascolta</button>:null;})}
+            {(()=>{var first=(rec.qobuz||[]).find(q=>q.url&&toOpenQobuz(q.url));return first?<button onClick={e=>{e.stopPropagation();window.open(toOpenQobuz(first.url),"_blank");}} style={{background:"#0e2a1a",border:"1px solid #1a5a30",color:"#4acf7a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>🎵 Ascolta</button>:null;})()}
             {onSave&&<span style={{display:"inline-flex",gap:4,alignItems:"center"}} onClick={e=>e.stopPropagation()}><input id={"qu-"+rec.rank} placeholder="Incolla URL Qobuz..." style={{background:"#0a0806",border:"1px solid #2a5a2a",color:"#f0ead6",padding:"4px 8px",borderRadius:4,fontSize:10,outline:"none",width:180}}/><button onClick={e=>{e.stopPropagation();var inp=document.getElementById("qu-"+rec.rank);var raw=inp?inp.value.trim():"";var qm=raw.match(/https:\/\/open\.qobuz\.com\/album\/[\w]+/);var url=qm?qm[0]:(raw.startsWith("http")?raw:"");if(url){onSave(rec,url);inp.value="";}}} style={{background:"#1a3a1a",border:"1px solid #2a5a2a",color:"#7acf9a",padding:"4px 8px",borderRadius:4,fontSize:10,cursor:"pointer"}}>💾</button></span>}
             {(rec.reviews||[]).map((r,i)=>(
               <button key={i}
@@ -486,7 +487,7 @@ function SearchPanel({apiKey,onResults,onNeedKey}) {
     if(!composer.trim()&&!work.trim())return;
     if(!apiKey){onNeedKey();return;}
     setLoading(true);setError(null);
-    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 migliori registrazioni disponibili in formato digitale ad alta fedeltà (CD lossless o Hi-Res 24bit) secondo Gramophone, BBC, ClassicsToday, Guardian, Classic Review. Escludi registrazioni disponibili solo su vinile o cassetta. qobuzUrl se noto.\nJSON COMPATTO senza newline: {\"work\":\"x\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"albumTitle\":\"titolo esatto album su Qobuz\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null}]}";
+    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 migliori registrazioni disponibili in formato digitale ad alta fedeltà (CD lossless o Hi-Res 24bit) secondo Gramophone, BBC, ClassicsToday, Guardian, Classic Review. Escludi registrazioni disponibili solo su vinile o cassetta. qobuzUrl se noto.\nJSON COMPATTO senza newline: {\"work\":\"x\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"albumTitle\":\"titolo esatto album su Qobuz\",\"digitalEdition\":\"es. CD 16bit/44kHz Naive 2003 o Hi-Res 24bit/96kHz BIS 2024\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null}]}";
     try{
       var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:3000,messages:[{role:"user",content:p}]})});
       if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit — aspetta 1 min.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
