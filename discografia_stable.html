@@ -279,14 +279,8 @@ function Card({rec,expanded,onToggle,work,onSave}) {
           </div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
             <button onClick={e=>{e.stopPropagation();window.open("https://open.qobuz.com","_blank");}} style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>🎵 Apri Qobuz</button>
-            {(rec.qobuz||[]).filter(q=>q.url).map((q,i)=>{
-              var app=toOpenQobuz(q.url);
-              return app?<button key={i} onClick={e=>{e.stopPropagation();window.open(app,"_blank");}} style={{background:"#0e2a1a",border:"1px solid #1a5a30",color:"#4acf7a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>🎵 Ascolta</button>:null;
-            })}
-            <span style={{display:"inline-flex",gap:4,alignItems:"center"}} onClick={e=>e.stopPropagation()}>
-              <input id={"qu-"+rec.rank} placeholder="Incolla URL album Qobuz..." style={{background:"#0a0806",border:"1px solid #2a5a2a",color:"#f0ead6",padding:"4px 8px",borderRadius:4,fontSize:10,outline:"none",width:180}}/>
-              <button onClick={e=>{e.stopPropagation();var inp=document.getElementById("qu-"+rec.rank);var url=inp?inp.value.trim():"";if(url.startsWith("http")&&onSave){onSave(rec,url);inp.value="";}}} style={{background:"#1a3a1a",border:"1px solid #2a5a2a",color:"#7acf9a",padding:"4px 8px",borderRadius:4,fontSize:10,cursor:"pointer"}}>💾</button>
-            </span>
+            {(rec.qobuz||[]).filter(q=>q.url).map((q,i)=>{var app=toOpenQobuz(q.url);return app?<button key={i} onClick={e=>{e.stopPropagation();window.open(app,"_blank");}} style={{background:"#0e2a1a",border:"1px solid #1a5a30",color:"#4acf7a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>🎵 Ascolta</button>:null;})}
+            {onSave&&<span style={{display:"inline-flex",gap:4,alignItems:"center"}} onClick={e=>e.stopPropagation()}><input id={"qu-"+rec.rank} placeholder="Incolla URL Qobuz..." style={{background:"#0a0806",border:"1px solid #2a5a2a",color:"#f0ead6",padding:"4px 8px",borderRadius:4,fontSize:10,outline:"none",width:180}}/><button onClick={e=>{e.stopPropagation();var inp=document.getElementById("qu-"+rec.rank);var url=inp?inp.value.trim():"";if(url&&url.startsWith("http")){onSave(rec,url);inp.value="";}}} style={{background:"#1a3a1a",border:"1px solid #2a5a2a",color:"#7acf9a",padding:"4px 8px",borderRadius:4,fontSize:10,cursor:"pointer"}}>💾</button></span>}
             {(rec.reviews||[]).map((r,i)=>(
               <button key={i}
                 onClick={e=>{e.stopPropagation();e.preventDefault();window.open(r.url,"_blank","noopener,noreferrer");}}
@@ -495,10 +489,10 @@ function SearchPanel({apiKey,onResults,onNeedKey}) {
     if(!composer.trim()&&!work.trim())return;
     if(!apiKey){onNeedKey();return;}
     setLoading(true);setError(null);
-    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 migliori registrazioni Gramophone, BBC, ClassicsToday, Guardian, Classic Review. qobuzUrl se noto.\nJSON: {\"work\":\"x\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null}]}";
+    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 migliori registrazioni Gramophone, BBC, ClassicsToday, Guardian, Classic Review. qobuzUrl se noto.\nJSON COMPATTO senza newline: {\"work\":\"x\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null}]}";
     try{
       var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:3000,messages:[{role:"user",content:p}]})});
-      if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429){var cd=60;var iv=setInterval(function(){cd--;setError("⏳ Rate limit — riprova tra "+cd+"s");if(cd<=0){clearInterval(iv);setError(null);}},1000);throw new Error("Rate limit");}throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
+      if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit — aspetta 1 min.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
       var d=await r.json();var t=(d.content||[]).map(function(b){return b.text||"";}).join("");
       var cl=t.replace(/```json|```/g,"").trim();var a=cl.indexOf("{"),b=cl.lastIndexOf("}");
       if(a<0||b<0)throw new Error("Formato non valido.");
@@ -579,15 +573,7 @@ function App() {
 
   const handleSaveQobuz=function(rec,url){
     if(!active||!active.recordings)return;
-    var upd={...active,recordings:active.recordings.map(function(r){
-      if(r.rank!==rec.rank||r.interpreter!==rec.interpreter)return r;
-      if((r.qobuz||[]).some(function(q){return q.url===url;}))return r;
-      return {...r,qobuz:[...(r.qobuz||[]),{label:"Ascolta",url:url}]};
-    })};
-    setActive(upd);
-    var lu=libraryRef.current.map(function(e){return e.id===upd.id?upd:e;});
-    saveLibrary(lu);libraryRef.current=lu;setLibrary(lu);
-    window.GH.save(lu,window.GH.tok());
+    var upd={...active,recordings:active.recordings.map(function(r){if(r.rank!==rec.rank||r.interpreter!==rec.interpreter)return r;if((r.qobuz||[]).some(function(q){return q.url===url;}))return r;return {...r,qobuz:[...(r.qobuz||[]),{label:"Ascolta",url:url}]};})};setActive(upd);var lu=libraryRef.current.map(function(e){return e.id===upd.id?upd:e;});saveLibrary(lu);libraryRef.current=lu;setLibrary(lu);window.GH.save(lu,window.GH.tok());
   };
   const handleDelete=id=>{
     const updated=saveLibrary(libraryRef.current.filter(e=>e.id!==id));
