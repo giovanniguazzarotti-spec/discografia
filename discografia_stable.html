@@ -426,70 +426,97 @@ function SourcesPanel() {
 // ── SEARCH PANEL ──────────────────────────────────────────────────────────────
 
 function OpenOpusSearch() {
-  const [query,setQuery]=React.useState("");
-  const [results,setResults]=React.useState(null);
-  const [loading,setLoading]=React.useState(false);
-  const [open,setOpen]=React.useState(false);
-
-  const search=async()=>{
-    if(!query.trim())return;
-    setLoading(true);setResults(null);
-    try{
-      const r=await fetch("https://api.openopus.org/composer/list/search/"+encodeURIComponent(query)+".json");
-      const d=await r.json();
-      setResults(d.composers||[]);setOpen(true);
-    }catch(e){setResults([]);}
-    finally{setLoading(false);}
-  };
-
-  const searchWorks=async(id,name)=>{
-    setLoading(true);
-    try{
-      const r=await fetch("https://api.openopus.org/work/list/composer/"+id+"/genre/all.json");
-      const d=await r.json();
-      setResults({composer:name,works:d.works||[]});
-    }catch(e){setResults({composer:name,works:[]});}
-    finally{setLoading(false);}
-  };
-
-  return(
-    <div style={{marginBottom:12}}>
-      <div style={{display:"flex",gap:8,marginBottom:8}}>
-        <input value={query} onChange={e=>setQuery(e.target.value)}
-          onKeyDown={e=>e.key==="Enter"&&search()}
-          placeholder="Cerca compositore…"
-          style={{flex:1,background:"#0a0806",border:"2px solid #5a5040",color:"#fff",padding:"8px 11px",borderRadius:4,fontSize:13,outline:"none"}}/>
-        <button onClick={search} disabled={loading} style={{background:C.gold,color:"#000",border:"none",borderRadius:4,padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>
-          {loading?"…":"🔎"}
-        </button>
-        {open&&<button onClick={()=>{setOpen(false);setResults(null);setQuery("");}} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,borderRadius:4,padding:"8px",fontSize:12,cursor:"pointer"}}>×</button>}
-      </div>
-      {open&&results&&!results.works&&(
-        <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:10,maxHeight:200,overflowY:"auto"}}>
-          {results.length===0&&<div style={{color:C.muted,fontSize:12}}>Nessun compositore trovato.</div>}
-          {results.map(function(comp){return(
-            <div key={comp.id} onClick={function(){searchWorks(comp.id,comp.complete_name);}}
-              style={{padding:"6px 8px",cursor:"pointer",borderBottom:`1px solid ${C.border}`,color:C.cream,fontSize:12}}>
-              <span style={{fontWeight:600}}>{comp.complete_name}</span>
-              <span style={{color:C.muted,fontSize:10,marginLeft:8}}>{comp.epoch}</span>
-            </div>
-          );})}
-        </div>
-      )}
-      {open&&results&&results.works&&(
-        <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:10,maxHeight:260,overflowY:"auto"}}>
-          <div style={{color:C.gold,fontSize:11,fontWeight:700,marginBottom:8}}>{results.composer}</div>
-          {results.works.length===0&&<div style={{color:C.muted,fontSize:12}}>Nessuna opera trovata.</div>}
-          {results.works.map(function(w){return(
-            <div key={w.id} style={{padding:"5px 0",borderBottom:`1px solid ${C.faint}`,fontSize:11}}>
-              <span style={{color:C.cream}}>{w.title}</span>
-              <span style={{color:C.muted,fontSize:10,marginLeft:8}}>{w.genre}</span>
-            </div>
-          );})}
-        </div>
-      )}
-    </div>
-  );
+ const [q,setQ]=React.useState("");
+ const [res,setRes]=React.useState(null);
+ const [loading,setLoading]=React.useState(false);
+ const [view,setView]=React.useState(null); // null | "composers" | "works" | "list"
+ const [composers,setComposers]=React.useState([]);
+ const searchComposers=async()=>{
+ if(!q.trim())return;
+ setLoading(true);
+ try{
+ const r=await fetch("https://api.openopus.org/composer/list/search/"+encodeURIComponent(q)+".json");
+ const d=await r.json();
+ setRes(d.composers||[]);setView("composers");
+ }catch{setRes([]);}
+ finally{setLoading(false);}
+ };
+ const loadAllComposers=async()=>{
+ if(composers.length>0){setView("list");return;}
+ setLoading(true);
+ try{
+ const r=await fetch("https://api.openopus.org/composer/list/pop.json");
+ const d=await r.json();
+ setComposers(d.composers||[]);setView("list");
+ }catch{}
+ finally{setLoading(false);}
+ };
+ const loadWorks=async(id,name)=>{
+ setLoading(true);
+ try{
+ const r=await fetch("https://api.openopus.org/work/list/composer/"+id+"/genre/all.json");
+ const d=await r.json();
+ setRes({composer:name,works:d.works||[]});setView("works");
+ }catch{}
+ finally{setLoading(false);}
+ };
+ const close=()=>{setView(null);setRes(null);setQ("");};
+ return(
+ <div style={{marginBottom:14}}>
+ <div style={{display:"flex",gap:6,marginBottom:6}}>
+ <input value={q} onChange={e=>setQ(e.target.value)}
+ onKeyDown={e=>e.key==="Enter"&&searchComposers()}
+ placeholder="Cerca compositore…"
+ style={{flex:1,background:"#0a0806",border:"2px solid #5a5040",color:"#fff",padding:"9px 10px",borderRadius:4,fontSize:13,outline:"none"}}/>
+ <button onClick={loadAllComposers} disabled={loading} title="Sfoglia"
+ style={{background:"transparent",border:"2px solid #5a5040",color:C.gold,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>☰</button>
+ {view&&<button onClick={close} style={{background:"transparent",border:"2px solid #5a5040",color:C.muted,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>×</button>}
+ </div>
+ <button onClick={searchComposers} disabled={loading||!q.trim()}
+ style={{width:"100%",background:q.trim()?C.gold:"#2a2520",color:q.trim()?"#000":"#555",border:"none",borderRadius:4,padding:"8px",fontSize:12,fontWeight:700,cursor:q.trim()?"pointer":"not-allowed",marginBottom:6}}>
+ {loading?"…":"🔎 Cerca"}
+ </button>
+ {view==="composers"&&res&&(
+ <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:180,overflowY:"auto"}}>
+ {res.length===0&&<div style={{color:C.muted,fontSize:12}}>Nessun risultato.</div>}
+ {res.map(function(comp){return(
+ <div key={comp.id} onClick={function(){loadWorks(comp.id,comp.complete_name);}}
+ style={{padding:"7px 8px",cursor:"pointer",borderBottom:`1px solid ${C.faint}`,color:C.cream,fontSize:13,display:"flex",justifyContent:"space-between"}}>
+ <span>{comp.complete_name}</span>
+ <span style={{color:C.muted,fontSize:11}}>{comp.epoch}</span>
+ </div>
+ );})}
+ </div>
+ )}
+ {view==="list"&&(
+ <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:180,overflowY:"auto"}}>
+ <div style={{color:C.gold,fontSize:10,marginBottom:6,letterSpacing:1}}>COMPOSITORI POPOLARI</div>
+ {composers.map(function(comp){return(
+ <div key={comp.id} onClick={function(){loadWorks(comp.id,comp.complete_name);}}
+ style={{padding:"7px 8px",cursor:"pointer",borderBottom:`1px solid ${C.faint}`,color:C.cream,fontSize:13,display:"flex",justifyContent:"space-between"}}>
+ <span>{comp.complete_name}</span>
+ <span style={{color:C.muted,fontSize:11}}>{comp.epoch}</span>
+ </div>
+ );})}
+ </div>
+ )}
+ {view==="works"&&res&&(
+ <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:220,overflowY:"auto"}}>
+ <div style={{color:C.gold,fontSize:11,fontWeight:700,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
+ <span>{res.composer}</span>
+ <span style={{color:C.muted,fontSize:10,cursor:"pointer"}} onClick={()=>setView(view==="list"?"list":"composers")}>← indietro</span>
+ </div>
+ {res.works.length===0&&<div style={{color:C.muted,fontSize:12}}>Nessuna opera.</div>}
+ {res.works.map(function(w){return(
+ <div key={w.id} style={{padding:"5px 0",borderBottom:`1px solid ${C.faint}`,display:"flex",justifyContent:"space-between"}}>
+ <span style={{color:C.cream,fontSize:12}}>{w.title}</span>
+ <span style={{color:C.muted,fontSize:10}}>{w.genre}</span>
+ </div>
+ );})}
+ </div>
+ )}
+ </div>
+ );
 }
 
 function SearchPanel({apiKey,onResults,onNeedKey}) {
