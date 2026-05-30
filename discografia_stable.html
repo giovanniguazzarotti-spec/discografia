@@ -477,7 +477,7 @@ function OpenOpusSearch() {
  {loading?"…":"🔎 Cerca"}
  </button>
  {view==="composers"&&res&&(
- <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:180,overflowY:"auto"}}>
+ <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:"40vh",overflowY:"auto"}}>
  {res.length===0&&<div style={{color:C.muted,fontSize:12}}>Nessun risultato.</div>}
  {res.map(function(comp){return(
  <div key={comp.id} onClick={function(){loadWorks(comp.id,comp.complete_name);}}
@@ -489,7 +489,7 @@ function OpenOpusSearch() {
  </div>
  )}
  {view==="list"&&(
- <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:180,overflowY:"auto"}}>
+ <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:"40vh",overflowY:"auto"}}>
  <div style={{color:C.gold,fontSize:10,marginBottom:6,letterSpacing:1}}>COMPOSITORI POPOLARI</div>
  {composers.map(function(comp){return(
  <div key={comp.id} onClick={function(){loadWorks(comp.id,comp.complete_name);}}
@@ -501,7 +501,7 @@ function OpenOpusSearch() {
  </div>
  )}
  {view==="works"&&res&&(
- <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:220,overflowY:"auto"}}>
+ <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:"45vh",overflowY:"auto"}}>
  <div style={{color:C.gold,fontSize:11,fontWeight:700,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
  <span>{res.composer}</span>
  <span style={{color:C.muted,fontSize:10,cursor:"pointer"}} onClick={()=>setView(view==="list"?"list":"composers")}>← indietro</span>
@@ -554,13 +554,11 @@ function SearchPanel({apiKey,onResults,onNeedKey}) {
           </div>
         ))}
       </div>
-      <div style={{display:"flex",alignItems:"center",gap:12}}>
-        <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#888":"#000000",border:"none",borderRadius:4,padding:"10px 24px",fontSize:14,fontWeight:700,cursor:loading?"not-allowed":"pointer"}}>
-          {loading?<span>⏳ Ricerca in corso…</span>:"Cerca registrazioni"}
-        </button>
-        <OpenOpusSearch/>
-        {!apiKey&&<span style={{color:C.amber,fontSize:11}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
-      </div>
+      <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#888":"#000000",border:"none",borderRadius:4,padding:"10px",fontSize:14,fontWeight:700,cursor:loading?"not-allowed":"pointer",width:"100%",marginBottom:12}}>
+        {loading?<span>⏳ Ricerca in corso…</span>:"Cerca registrazioni"}
+      </button>
+      {!apiKey&&<span style={{color:C.amber,fontSize:11,display:"block",marginBottom:8}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
+      <OpenOpusSearch/>
       {error&&<p style={{color:C.red,fontSize:11,marginTop:8,marginBottom:0}}>{error}</p>}
     </div>
   );
