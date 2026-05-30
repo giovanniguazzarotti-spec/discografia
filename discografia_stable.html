@@ -250,20 +250,13 @@ function Card({rec,expanded,onToggle,work,onSave}) {
           </div>
           <div style={{color:C.muted,fontSize:11,marginTop:2}}>{rec.label} · {rec.year} · {rec.books}</div>
           {(rec.albumTitle||rec.digitalEdition)&&<div
-            title="Tocca per copiare"
-            onClick={e=>{e.stopPropagation();var txt=[rec.albumTitle,rec.interpreter,work&&work.split("–")[0].trim(),rec.year,rec.label,rec.digitalEdition].filter(Boolean).join(" · ");navigator.clipboard&&navigator.clipboard.writeText(txt).catch(function(){});}}
+            title="Copia"
+            onClick={e=>{e.stopPropagation();var txt=[rec.albumTitle,rec.interpreter,rec.year,rec.label,rec.digitalEdition].filter(Boolean).join(" · ");navigator.clipboard&&navigator.clipboard.writeText(txt).catch(function(){});}}
             style={{color:"#7a9a7a",fontSize:10,marginTop:2,cursor:"copy",userSelect:"none"}}>
-            {[rec.albumTitle,rec.interpreter,work&&work.split("–")[0].trim(),rec.year,rec.label,rec.digitalEdition].filter(Boolean).join(" · ")} 📋
+            {[rec.albumTitle,rec.interpreter,rec.year,rec.label,rec.digitalEdition].filter(Boolean).join(" · ")} 📋
           </div>}
         </div>
-        <div style={{display:"flex",gap:14}}>
-          {[["Esec.",rec.execStars],["Reg.",rec.recStars]].map(([l,n])=>(
-            <div key={l} style={{textAlign:"center"}}>
-              <div style={{color:C.muted,fontSize:8,letterSpacing:1,textTransform:"uppercase"}}>{l}</div>
-              <Stars n={n}/>
-            </div>
-          ))}
-        </div>
+
         <span style={{color:C.gold,fontSize:14,marginLeft:4}}>{expanded?"▲":"▼"}</span>
       </div>
       {expanded&&(
@@ -277,17 +270,25 @@ function Card({rec,expanded,onToggle,work,onSave}) {
             ))}
           </div>
           {(rec.reviews&&rec.reviews.length>0)&&<div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:8}}>
-            {rec.reviews.map(function(r,i){return <button key={i} onClick={function(e){e.stopPropagation();window.open(r.url,"_blank");}} style={{background:"#1a1f3a",border:"1px solid #2a3a6a",color:"#7a9acf",padding:"4px 10px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>📰 {r.source}</button>;})}
+            {rec.reviews.map(function(r,i){return <button key={i} onClick={function(e){e.stopPropagation();window.open(r.url,"_blank");}} style={{background:"#1a1f3a",border:"1px solid #2a3a6a",color:"#7a9acf",padding:"4px 10px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>📰 {r.label||r.source}</button>;})}
           </div>}
           {(!rec.reviews||!rec.reviews.length)&&rec.criticalNote&&<div style={{background:C.bg,borderRadius:4,padding:"8px 12px",marginTop:8}}>
             <p style={{color:C.mid,fontSize:11,margin:0,lineHeight:1.6}}>{rec.criticalNote}</p>
           </div>}
+          <div style={{display:"flex",gap:20,marginTop:14,paddingTop:10,borderTop:`1px solid ${C.border}`}}>
+            {[["⭐ Esecuzione",rec.execStars],["🎙️ Registrazione",rec.recStars]].map(function(item){return(
+              <div key={item[0]} style={{textAlign:"center"}}>
+                <div style={{color:C.muted,fontSize:9,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>{item[0]}</div>
+                <Stars n={item[1]} size={16}/>
+              </div>
+            );})}
+          </div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
             {(()=>{var first=(rec.qobuz||[]).find(q=>q.url&&toOpenQobuz(q.url));return first?<button onClick={e=>{e.stopPropagation();window.open(toOpenQobuz(first.url),"_blank");}} style={{background:"#0e2a1a",border:"1px solid #1a5a30",color:"#4acf7a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>🎵 Ascolta</button>:null;})()}
-            {onSave&&<span style={{display:"inline-flex",gap:4,alignItems:"center"}} onClick={e=>e.stopPropagation()}><input id={"qu-"+rec.rank} placeholder="Incolla URL Qobuz..." style={{background:"#0a0806",border:"1px solid #2a5a2a",color:"#f0ead6",padding:"4px 8px",borderRadius:4,fontSize:10,outline:"none",width:180}}/><button onClick={e=>{e.stopPropagation();var inp=document.getElementById("qu-"+rec.rank);var raw=inp?inp.value.trim():"";var qm=raw.match(/https:\/\/open\.qobuz\.com\/album\/[\w]+/);var url=qm?qm[0]:(raw.startsWith("http")?raw:"");if(url){onSave(rec,url);inp.value="";}}} style={{background:"#1a3a1a",border:"1px solid #2a5a2a",color:"#7acf9a",padding:"4px 8px",borderRadius:4,fontSize:10,cursor:"pointer"}}>💾</button></span>}
+            {onSave&&<span style={{display:"inline-flex",gap:4,alignItems:"center"}} onClick={e=>e.stopPropagation()}><input id={"qu-"+rec.rank} placeholder="URL Qobuz..." style={{background:"#0a0806",border:"1px solid #2a5a2a",color:"#f0ead6",padding:"4px 8px",borderRadius:4,fontSize:10,outline:"none",width:180}}/><button onClick={e=>{e.stopPropagation();var inp=document.getElementById("qu-"+rec.rank);var raw=inp?inp.value.trim():"";var qm=raw.match(/https:\/\/open\.qobuz\.com\/album\/[\w]+/);var url=qm?qm[0]:(raw.startsWith("http")?raw:"");if(url){onSave(rec,url);inp.value="";}}} style={{background:"#1a3a1a",border:"1px solid #2a5a2a",color:"#7acf9a",padding:"4px 8px",borderRadius:4,fontSize:10,cursor:"pointer"}}>💾</button></span>}
             {(rec.reviews||[]).map((r,i)=>(
               <button key={i}
-                onClick={e=>{e.stopPropagation();e.preventDefault();window.open(r.url,"_blank","noopener,noreferrer");}}
+                onClick={e=>{e.stopPropagation();e.preventDefault();window.open(r.url,"_blank","noreferrer");}}
                 style={{background:"#1a1f3a",border:"1px solid #2a3a6a",color:"#7a9acf",padding:"4px 10px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>
                 📰 {r.label}
               </button>
@@ -355,7 +356,6 @@ function LibraryModal({library, activeId, onSelect, onDelete, onClose, onExport}
           {allEntries.map((e,i)=>{
             const isActive=activeId===e.id;
             const isBuiltin=e._builtin;
-            // Index counts only real searches (excluding builtin)
             const searchIdx = isBuiltin ? 1 : allEntries.slice(0,i).filter(x=>!x._builtin).length + 2;
             return (
               <div key={e.id||i} onClick={()=>{onSelect(e);onClose();}}
@@ -428,7 +428,7 @@ function LibraryModal({library, activeId, onSelect, onDelete, onClose, onExport}
             <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setConfirmId(null)}>
               <div style={{background:C.bg2,border:"1px solid #3a2020",borderRadius:8,padding:"24px 28px",maxWidth:320,width:"100%",textAlign:"center"}} onClick={ev=>ev.stopPropagation()}>
                 <div style={{color:"#c96060",fontSize:15,marginBottom:10}}>Rimuovi ricerca dalla biblioteca</div>
-                <p style={{color:C.mid,fontSize:12,lineHeight:1.7,marginBottom:20}}>Vuoi rimuovere questa ricerca dalla biblioteca? La guida Bach precaricata non viene toccata.</p>
+                <p style={{color:C.mid,fontSize:12,lineHeight:1.7,marginBottom:20}}>Rimuovere questa ricerca?</p>
                 <div style={{display:"flex",gap:10}}>
                   <button onClick={()=>setConfirmId(null)} style={{flex:1,background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"9px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Annulla</button>
                   <button onClick={()=>{onDelete(confirmId);setConfirmId(null);}} style={{flex:1,background:"#2a0f0f",border:"1px solid #5a2020",color:"#c96060",padding:"9px",borderRadius:4,fontSize:13,fontWeight:700,cursor:"pointer"}}>Rimuovi</button>
@@ -493,7 +493,7 @@ function SearchPanel({apiKey,onResults,onNeedKey}) {
     if(!composer.trim()&&!work.trim())return;
     if(!apiKey){onNeedKey();return;}
     setLoading(true);setError(null);
-    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 migliori registrazioni disponibili in digitale Hi-Res o CD lossless secondo Gramophone, BBC, ClassicsToday, Guardian, Classic Review.\nPer ogni registrazione indica: il titolo ESATTO dell album come appare su Qobuz (albumTitle), e il formato digitale disponibile come es. Hi-Res 24bit/96kHz o CD 16bit/44kHz con etichetta e anno edizione digitale (digitalEdition).\nJSON COMPATTO: {\"work\":\"Compositore - Opera\",\"instrument\":\"str\",\"summary\":\"testo\",\"recommendation\":\"testo\",\"recordings\":[{\"rank\":1,\"interpreter\":\"nome\",\"label\":\"etichetta\",\"year\":\"anno\",\"books\":\"vol\",\"albumTitle\":\"titolo preciso album\",\"digitalEdition\":\"es. Hi-Res 24bit/96kHz - BIS Records 2024 o CD 16bit/44kHz - Naive 2003\",\"execStars\":5,\"recStars\":4,\"consensus\":\"unanime\",\"consensusIcon\":\"🟢\",\"execNote\":\"nota\",\"recNote\":\"nota\",\"criticalNote\":\"nota breve\",\"reviewUrls\":[{\"source\":\"Gramophone\",\"url\":\"https://...\"},{\"source\":\"BBC Music\",\"url\":\"https://...\"}],\"qobuzUrl\":null}]}";
+    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 migliori registrazioni disponibili in digitale Hi-Res o CD lossless secondo Gramophone, BBC, ClassicsToday, Guardian, Classic Review.\nPer ogni registrazione indica: il titolo ESATTO dell album come appare su Qobuz (albumTitle), e il formato digitale disponibile come es. Hi-Res 24bit/96kHz o CD 16bit/44kHz con etichetta e anno edizione digitale (digitalEdition).\nJSON COMPATTO: {\"work\":\"Compositore - Opera\",\"instrument\":\"str\",\"summary\":\"testo\",\"recommendation\":\"testo\",\"recordings\":[{\"rank\":1,\"interpreter\":\"nome\",\"label\":\"etichetta\",\"year\":\"anno\",\"books\":\"vol\",\"albumTitle\":\"titolo preciso album\",\"digitalEdition\":\"es. Hi-Res 24bit/96kHz - BIS Records 2024 o CD 16bit/44kHz - Naive 2003\",\"execStars\":5,\"recStars\":4,\"consensus\":\"unanime\",\"consensusIcon\":\"🟢\",\"execNote\":\"nota\",\"recNote\":\"nota\",\"criticalNote\":\"nota breve\",\"reviewUrls\":[{\"label\":\"Gramophone\",\"url\":\"https://gramophone.co.uk/...\"},{\"label\":\"BBC Music\",\"url\":\"https://classical-music.com/...\"} ],\"qobuzUrl\":null}]}";
     try{
       var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:3000,messages:[{role:"user",content:p}]})});
       if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit — aspetta 1 min.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
@@ -521,7 +521,7 @@ function SearchPanel({apiKey,onResults,onNeedKey}) {
         <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#666":"#0f0d09",border:"none",borderRadius:4,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:loading?"not-allowed":"pointer"}}>
           {loading?<span>⏳ Ricerca in corso…</span>:"Cerca registrazioni"}
         </button>
-        <a href="https://www.arkivmusic.com/classical/Search" target="_blank" rel="noreferrer" style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,borderRadius:4,padding:"8px 12px",fontSize:11,textDecoration:"none",display:"inline-block"}}>🔎 ArkivMusic</a>
+        <a href="https://www.arkivmusic.com/classical/Search" target="_blank" rel="noreferrer" style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,borderRadius:4,padding:"8px 12px",fontSize:11,textDecoration:"none",display:"inline-block"}}>🔎 Arkiv</a>
         {!apiKey&&<span style={{color:C.amber,fontSize:11}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
       </div>
       {error&&<p style={{color:C.red,fontSize:11,marginTop:8,marginBottom:0}}>{error}</p>}
@@ -566,7 +566,7 @@ function App() {
           consensus:r.consensus||"—",consensusIcon:r.consensusIcon||"🟡",
           execStars:r.execStars||3,recStars:r.recStars||3,
           execNote:r.execNote||"",recNote:r.recNote||"",criticalNote:r.criticalNote||"",
-          reviews:(r.reviewUrls||[]).filter(function(x){return x&&x.url&&x.url.startsWith("http");}),
+          reviews:(r.reviewUrls||r.reviews||[]).filter(function(x){return x&&x.url&&x.url.startsWith("http");}),
         };
       }),
     };
@@ -619,7 +619,7 @@ function App() {
               </div>
               {flash&&<span className="flash" style={{color:C.green,fontSize:10}}>✓ Salvata</span>}
               {apiKey&&<span onClick={()=>setShowSetup(true)} style={{color:"#4a8a5a",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",marginTop:6,display:"block"}}>🔑 API configurata</span>}
-              <span onClick={()=>{var t=prompt("GitHub Token:",ghTok);if(t!==null){window.GH.save(t);setGhTok(t);}}} style={{color:ghTok?"#4a8a5a":"#c9a84c",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",marginTop:4,display:"block"}}>{ghTok?"📂 GitHub configurato":"📂 Configura GitHub"}</span>
+              <span onClick={()=>{var t=prompt("GitHub Token:",ghTok);if(t!==null){window.GH.save(t);setGhTok(t);}}} style={{color:ghTok?"#4a8a5a":"#c9a84c",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",marginTop:4,display:"block"}}>{ghTok?"📂 GitHub conf.":"📂 GitHub..."}</span>
             </div>
           </div>
         </div>
