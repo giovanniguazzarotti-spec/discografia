@@ -136,7 +136,7 @@ function SetupScreen({onSave}) {
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
       <div style={{maxWidth:520,width:"100%"}}>
         <div style={{textAlign:"center",marginBottom:32}}>
-          <div style={{color:C.gold,fontSize:10,letterSpacing:3,textTransform:"uppercase",marginBottom:12}}>Critica Discografica Specializzata</div>
+          <div style={{color:C.gold,fontSize:10,letterSpacing:3,textTransform:"uppercase",marginBottom:12}}>Critica Discografica</div>
           <h1 style={{color:C.cream,fontWeight:400,fontSize:26,marginBottom:8}}>Configurazione chiave API</h1>
           <p style={{color:C.mid,fontSize:13,lineHeight:1.7}}>Per usare la ricerca AI inserisci la tua chiave API Anthropic.<br/>Puoi usare l'app anche senza — i dati Bach precaricati sono sempre disponibili.</p>
         </div>
@@ -149,13 +149,13 @@ function SetupScreen({onSave}) {
             <button onClick={()=>setShow(!show)} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"0 12px",borderRadius:4,fontSize:12,cursor:"pointer"}}>{show?"Nascondi":"Mostra"}</button>
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>key.trim()&&onSave(key.trim())} disabled={!key.trim()} style={{flex:1,background:key.trim()?C.gold:"#2a2520",color:key.trim()?"#0f0d09":"#555",border:"none",borderRadius:4,padding:"10px",fontSize:14,fontWeight:700,cursor:key.trim()?"pointer":"not-allowed"}}>Salva e apri l'app</button>
+            <button onClick={()=>key.trim()&&onSave(key.trim())} disabled={!key.trim()} style={{flex:1,background:key.trim()?C.gold:"#2a2520",color:key.trim()?"#0f0d09":"#555",border:"none",borderRadius:4,padding:"10px",fontSize:14,fontWeight:700,cursor:key.trim()?"pointer":"not-allowed"}}>Salva</button>
             <button onClick={()=>onSave("")} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"10px 16px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Salta (solo Bach)</button>
           </div>
         </div>
         <div style={{background:"#0f1a0f",border:"1px solid #1a3a1a",borderRadius:8,padding:20}}>
           <div style={{color:C.green,fontSize:11,fontWeight:700,marginBottom:10,letterSpacing:1}}>COME OTTENERE LA CHIAVE</div>
-          {[["1","Vai su","platform.claude.com","https://platform.claude.com"],["2","Crea un account (separato da Claude.ai)","",""],["3","Menu laterale → \"API Keys\" → \"Create Key\"","",""],["4","Aggiungi credito: minimo $5 (≈ 380 ricerche)","",""]].map(([n,t,link,url])=>(
+          {[["1","Vai su","platform.claude.com","https://platform.claude.com"],["2","Crea account (separato da Claude.ai)","",""],["3","API Keys → Create Key","",""],["4","Aggiungi credito: min. $5","",""]].map(([n,t,link,url])=>(
             <div key={n} style={{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}}>
               <span style={{background:C.faint,color:C.gold,borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0,marginTop:1}}>{n}</span>
               <span style={{color:C.mid,fontSize:12,lineHeight:1.5}}>{t} {link&&<a href={url} target="_blank" rel="noreferrer" style={{color:C.gold}}>{link}</a>}</span>
@@ -425,7 +425,7 @@ function SourcesPanel() {
 
 // ── SEARCH PANEL ──────────────────────────────────────────────────────────────
 
-function OpenOpusSearch() {
+function OpenOpusSearch({onComposer,onWork}) {
  const [q,setQ]=React.useState("");
  const [res,setRes]=React.useState(null);
  const [loading,setLoading]=React.useState(false);
@@ -466,7 +466,7 @@ function OpenOpusSearch() {
  <div style={{display:"flex",gap:6,marginBottom:6}}>
  <input value={q} onChange={e=>setQ(e.target.value)}
  onKeyDown={e=>e.key==="Enter"&&searchComposers()}
- placeholder="Cerca compositore…"
+ placeholder="Compositore…"
  style={{flex:1,background:"#0a0806",border:"2px solid #5a5040",color:"#fff",padding:"9px 10px",borderRadius:4,fontSize:13,outline:"none"}}/>
  <button onClick={loadAllComposers} disabled={loading} title="Sfoglia"
  style={{background:"transparent",border:"2px solid #5a5040",color:C.gold,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>☰</button>
@@ -474,13 +474,13 @@ function OpenOpusSearch() {
  </div>
  <button onClick={searchComposers} disabled={loading||!q.trim()}
  style={{width:"100%",background:q.trim()?C.gold:"#2a2520",color:q.trim()?"#000":"#555",border:"none",borderRadius:4,padding:"8px",fontSize:12,fontWeight:700,cursor:q.trim()?"pointer":"not-allowed",marginBottom:6}}>
- {loading?"…":"🔎 Cerca"}
+ {loading?"…":"🔎"}
  </button>
  {view==="composers"&&res&&(
  <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:"40vh",overflowY:"auto"}}>
  {res.length===0&&<div style={{color:C.muted,fontSize:12}}>Nessun risultato.</div>}
  {res.map(function(comp){return(
- <div key={comp.id} onClick={function(){loadWorks(comp.id,comp.complete_name);}}
+ <div key={comp.id} onClick={function(){loadWorks(comp.id,comp.complete_name);onComposer&&onComposer(comp.complete_name)}}
  style={{padding:"7px 8px",cursor:"pointer",borderBottom:`1px solid ${C.faint}`,color:C.cream,fontSize:13,display:"flex",justifyContent:"space-between"}}>
  <span>{comp.complete_name}</span>
  <span style={{color:C.muted,fontSize:11}}>{comp.epoch}</span>
@@ -492,7 +492,7 @@ function OpenOpusSearch() {
  <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:"40vh",overflowY:"auto"}}>
  <div style={{color:C.gold,fontSize:10,marginBottom:6,letterSpacing:1}}>COMPOSITORI POPOLARI</div>
  {composers.map(function(comp){return(
- <div key={comp.id} onClick={function(){loadWorks(comp.id,comp.complete_name);}}
+ <div key={comp.id} onClick={function(){loadWorks(comp.id,comp.complete_name);onComposer&&onComposer(comp.complete_name)}}
  style={{padding:"7px 8px",cursor:"pointer",borderBottom:`1px solid ${C.faint}`,color:C.cream,fontSize:13,display:"flex",justifyContent:"space-between"}}>
  <span>{comp.complete_name}</span>
  <span style={{color:C.muted,fontSize:11}}>{comp.epoch}</span>
@@ -508,7 +508,7 @@ function OpenOpusSearch() {
  </div>
  {res.works.length===0&&<div style={{color:C.muted,fontSize:12}}>Nessuna opera.</div>}
  {res.works.map(function(w){return(
- <div key={w.id} style={{padding:"5px 0",borderBottom:`1px solid ${C.faint}`,display:"flex",justifyContent:"space-between"}}>
+ <div key={w.id} onClick={function(){onWork&&onWork(w.title)}} style={{padding:"5px 0",borderBottom:`1px solid ${C.faint}`,display:"flex",justifyContent:"space-between",cursor:"pointer"}}>
  <span style={{color:C.cream,fontSize:12}}>{w.title}</span>
  <span style={{color:C.muted,fontSize:10}}>{w.genre}</span>
  </div>
@@ -530,7 +530,7 @@ function SearchPanel({apiKey,onResults,onNeedKey}) {
     if(!composer.trim()&&!work.trim())return;
     if(!apiKey){onNeedKey();return;}
     setLoading(true);setError(null);
-    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 migliori registrazioni disponibili in digitale Hi-Res o CD lossless secondo Gramophone, BBC, ClassicsToday, Guardian, Classic Review.\nPer ogni registrazione indica: il titolo ESATTO dell album come appare su Qobuz (albumTitle), e il formato digitale disponibile come es. Hi-Res 24bit/96kHz o CD 16bit/44kHz con etichetta e anno edizione digitale (digitalEdition).\nJSON COMPATTO: {\"work\":\"Compositore - Opera\",\"instrument\":\"str\",\"summary\":\"testo\",\"recommendation\":\"testo\",\"recordings\":[{\"rank\":1,\"interpreter\":\"nome\",\"label\":\"etichetta\",\"year\":\"anno\",\"books\":\"vol\",\"albumTitle\":\"titolo preciso album\",\"digitalEdition\":\"es. Hi-Res 24bit/96kHz - BIS Records 2024 o CD 16bit/44kHz - Naive 2003\",\"execStars\":5,\"recStars\":4,\"consensus\":\"unanime\",\"consensusIcon\":\"🟢\",\"execNote\":\"nota\",\"recNote\":\"nota\",\"criticalNote\":\"nota breve\",\"reviewUrls\":[{\"label\":\"Gramophone\",\"url\":\"https://gramophone.co.uk/...\"},{\"label\":\"BBC Music\",\"url\":\"https://classical-music.com/...\"} ],\"qobuzUrl\":null}]}";
+    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 migliori registrazioni Hi-Res o CD lossless: Gramophone, BBC, ClassicsToday, Guardian, Classic Review.\nPer ogni registrazione indica: il titolo ESATTO dell album come appare su Qobuz (albumTitle), e il formato digitale disponibile come es. Hi-Res 24bit/96kHz o CD 16bit/44kHz con etichetta e anno edizione digitale (digitalEdition).\nJSON COMPATTO: {\"work\":\"Compositore - Opera\",\"instrument\":\"str\",\"summary\":\"testo\",\"recommendation\":\"testo\",\"recordings\":[{\"rank\":1,\"interpreter\":\"nome\",\"label\":\"etichetta\",\"year\":\"anno\",\"books\":\"vol\",\"albumTitle\":\"titolo preciso album\",\"digitalEdition\":\"es. Hi-Res 24bit/96kHz - BIS Records 2024 o CD 16bit/44kHz - Naive 2003\",\"execStars\":5,\"recStars\":4,\"consensus\":\"unanime\",\"consensusIcon\":\"🟢\",\"execNote\":\"nota\",\"recNote\":\"nota\",\"criticalNote\":\"nota breve\",\"reviewUrls\":[{\"label\":\"Gramophone\",\"url\":\"https://gramophone.co.uk/...\"},{\"label\":\"BBC Music\",\"url\":\"https://classical-music.com/...\"} ],\"qobuzUrl\":null}]}";
     try{
       var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:3000,messages:[{role:"user",content:p}]})});
       if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit — aspetta 1 min.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
@@ -546,19 +546,19 @@ function SearchPanel({apiKey,onResults,onNeedKey}) {
     <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:18,marginBottom:20}}>
       <h3 style={{color:C.gold,margin:"0 0 14px",fontSize:14,letterSpacing:2,textTransform:"uppercase"}}>🔍 Cerca nuova opera</h3>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:9,marginBottom:11}}>
-        {[["Compositore",composer,setComposer,"es. Schubert…","f1"],["Opera",work,setWork,"es. Winterreise…","f2"],["Strumento",instrument,setInstrument,"es. pianoforte…","f3"]].map(([l,v,s,p,f])=>(
+        {[["Compositore",composer,setComposer,"Schubert…","f1"],["Opera",work,setWork,"Winterreise…","f2"],["Strumento",instrument,setInstrument,"pianoforte…","f3"]].map(([l,v,s,p,f])=>(
           <div key={l}>
-            <label style={{color:"#c8bfad",fontSize:12,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:5}}>{l}</label>
+            <label style={{color:"#c8bfad",fontSize:12,textTransform:"uppercase",display:"block",marginBottom:4}}>{l}</label>
             <input id={f} value={v} onChange={e=>s(e.target.value)} placeholder={p} onKeyDown={e=>{if(e.key==="Enter"){if(l==="Compositore")document.getElementById("f2")&&document.getElementById("f2").focus();else if(l==="Opera")document.getElementById("f3")&&document.getElementById("f3").focus();else search();}}}
               style={{width:"100%",background:"#0a0806",border:"2px solid #7a6a50",color:"#ffffff",padding:"9px 11px",borderRadius:4,fontSize:14,outline:"none"}}/>
           </div>
         ))}
       </div>
       <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#888":"#000000",border:"none",borderRadius:4,padding:"10px",fontSize:14,fontWeight:700,cursor:loading?"not-allowed":"pointer",width:"100%",marginBottom:12}}>
-        {loading?<span>⏳ Ricerca in corso…</span>:"Cerca registrazioni"}
+        {loading?<span>⏳ Ricerca in corso…</span>:"Cerca"}
       </button>
       {!apiKey&&<span style={{color:C.amber,fontSize:11,display:"block",marginBottom:8}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
-      <OpenOpusSearch/>
+      <OpenOpusSearch onComposer={setComposer} onWork={setWork}/>
       {error&&<p style={{color:C.red,fontSize:11,marginTop:8,marginBottom:0}}>{error}</p>}
     </div>
   );
@@ -642,7 +642,7 @@ function App() {
           <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
             <div style={{flex:1,minWidth:0}}>
               <div style={{color:C.gold,fontSize:11,fontWeight:600,letterSpacing:2,textTransform:"uppercase",marginBottom:5}}>Guida alle Registrazioni · Musica Classica</div>
-              <h1 style={{margin:0,fontSize:22,fontWeight:700,color:"#ffffff",lineHeight:1.2}}>Critica Discografica Specializzata</h1>
+              <h1 style={{margin:0,fontSize:22,fontWeight:700,color:"#ffffff",lineHeight:1.2}}>Critica Discografica</h1>
               <p style={{color:"#c8bfad",fontSize:11,margin:"6px 0 0",lineHeight:1.5}}>Gramophone · BBC Music · ClassicsToday · Guardian · Classic Review · ArkivMusic</p>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end",flexShrink:0}}>
@@ -700,7 +700,7 @@ function App() {
 
         </div>}
         <div style={{borderTop:`1px solid ${C.bg3}`,marginTop:36,paddingTop:12,color:C.faint,fontSize:10}}>
-          Critica Discografica Specializzata · Maggio 2026 · Biblioteca salvata in questo browser · {library.length}/200 guide
+          Critica Discografica · Maggio 2026 · Biblioteca salvata in questo browser · {library.length}/200 guide
         </div>
       </div>
 
