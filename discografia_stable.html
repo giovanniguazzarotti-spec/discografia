@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Critica Discografica Classica</title>
 <script>
+function generatePDF(entry){if(!entry)return;var lines=["CRITICA DISCOGRAFICA SPECIALIZZATA",""];lines.push((entry.work||"").toUpperCase());if(entry.instrument)lines.push("Strumento: "+entry.instrument);lines.push("");if(entry.summary){lines.push(entry.summary);lines.push("");}(entry.recordings||[]).forEach(function(rec){lines.push("---");lines.push("#"+rec.rank+" "+rec.interpreter+" "+rec.consensusIcon);lines.push(rec.label+" "+rec.year);if(rec.execNote)lines.push(rec.execNote);if(rec.recNote)lines.push(rec.recNote);if(rec.criticalNote)lines.push(rec.criticalNote);(rec.qobuz||[]).forEach(function(q){if(q.url)lines.push("Qobuz: "+q.url);});lines.push("");});if(entry.recommendation)lines.push("Consiglio: "+entry.recommendation);var txt=lines.join("\n");var el=document.createElement("textarea");el.value=txt;el.style.cssText="position:fixed;opacity:0";document.body.appendChild(el);el.select();try{document.execCommand("copy");}catch(ex){}document.body.removeChild(el);alert("Testo copiato!");}
 window.GH={LS:"cdc_gh_v1",tok:function(){try{return localStorage.getItem(this.LS)||"";}catch{return "";}},save:function(t){try{localStorage.setItem(this.LS,t);}catch{}}};
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -130,65 +131,6 @@ const SOURCES = [
   {name:"ClassicalGuy",url:"https://classicalguy.substack.com",desc:"Newsletter specializzata su discografia classica"},
   {name:"TalkClassical",url:"https://www.talkclassical.com",desc:"Comunità di appassionati e critici"},
 ];
-
-// ── PDF EXPORT ────────────────────────────────────────────────────────────────
-function generatePDF(entry) {
-  const lines=[];
-  lines.push("CRITICA DISCOGRAFICA SPECIALIZZATA");
-  lines.push("Fonti: Gramophone, BBC Music Magazine, ClassicsToday, The Guardian, The Classic Review, Limelight, ArkivMusic");
-  lines.push("");
-  lines.push((entry.work||"").toUpperCase());
-  if(entry.instrument) lines.push("Strumento: "+entry.instrument);
-  if(entry.savedAt&&entry.savedAt!=="Precaricato") lines.push("Ricerca: "+entry.savedAt);
-  lines.push("");
-  if(entry.summary){lines.push(entry.summary);lines.push("");}
-  (entry.recordings||[]).forEach(rec=>{
-    lines.push("-".repeat(60));
-    lines.push(`#${rec.rank}  ${rec.interpreter}  [Lv.${rec.level}]  ${rec.consensusIcon} ${rec.consensus}`);
-    lines.push(`${rec.label} - ${rec.year} - ${rec.books}`);
-    lines.push(`Esecuzione: ${"*".repeat(rec.execStars||0)}${"o".repeat(5-(rec.execStars||0))}   Registrazione: ${"*".repeat(rec.recStars||0)}${"o".repeat(5-(rec.recStars||0))}`);
-    lines.push(""); lines.push("ESECUZIONE: "+(rec.execNote||"—"));
-    lines.push("REGISTRAZIONE: "+(rec.recNote||"—"));
-    lines.push("CRITICA: "+(rec.criticalNote||"—"));
-    const ql=(rec.qobuz||[]).filter(q=>q.url).map(q=>`${q.label}: ${q.url}`);
-    if(ql.length) lines.push("QOBUZ: "+ql.join(" | "));
-    const rl=(rec.reviews||[]).map(r=>`${r.label}: ${r.url}`);
-    if(rl.length) lines.push("RECENSIONI: "+rl.join(" | "));
-    lines.push("");
-  });
-  if(entry.recommendation){lines.push("-".repeat(60));lines.push("CONSIGLIO: "+entry.recommendation);lines.push("");}
-  lines.push("Guida discografica critica - Maggio 2026");
-  const pageH=842,margin=50;
-  const objects=[],offsets=[];
-  let objCount=0;
-  const addObj=c=>{objCount++;objects.push({id:objCount,content:c});return objCount;};
-  addObj("<< /Type /Catalog /Pages 2 0 R >>");addObj("");
-  const allPages=[],pageLines=[];let curY=pageH-margin;
-  function flushPage(){
-    if(!pageLines.length)return;
-    let s="BT\n/F1 10 Tf\n12 TL\n";let sy=pageH-margin;
-    for(const l of pageLines){const safe=l.replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)").replace(/[^\x20-\x7E]/g,"?");s+=`${margin} ${sy} Td (${safe.slice(0,100)}) Tj\n0 0 Td `;sy-=13;}
-    s+="ET";
-    const sId=addObj(`<< /Length ${s.length} >>\nstream\n${s}\nendstream`);
-    const pId=addObj(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents ${sId} 0 R /Resources << /Font << /F1 ${objCount+1} 0 R >> >> >>`);
-    allPages.push(pId);pageLines.length=0;
-  }
-  for(const l of lines){if(curY<margin+30){flushPage();curY=pageH-margin;}pageLines.push(l);curY-=13;}
-  flushPage();
-  addObj("<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>");
-  objects[1]={id:2,content:`<< /Type /Pages /Kids [${allPages.map(p=>p+" 0 R").join(" ")}] /Count ${allPages.length} >>`};
-  let pdf="%PDF-1.4\n";
-  for(const o of objects){offsets.push(pdf.length);pdf+=`${o.id} 0 obj\n${o.content}\nendobj\n`;}
-  const xo=pdf.length;
-  pdf+=`xref\n0 ${objCount+1}\n0000000000 65535 f \n`;
-  for(const off of offsets)pdf+=String(off).padStart(10,"0")+" 00000 n \n";
-  pdf+=`trailer\n<< /Size ${objCount+1} /Root 1 0 R >>\nstartxref\n${xo}\n%%EOF`;
-  const blob=new Blob([pdf],{type:"application/pdf"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;a.download=((entry.work||"guida").replace(/[^a-zA-Z0-9\s]/g,"").trim().replace(/\s+/g,"_").slice(0,50))+"_discografia.pdf";
-  a.click();URL.revokeObjectURL(url);
-}
 
 // ── SETUP SCREEN ──────────────────────────────────────────────────────────────
 function SetupScreen({onSave}) {
@@ -484,7 +426,33 @@ function SourcesPanel() {
 }
 
 // ── SEARCH PANEL ──────────────────────────────────────────────────────────────
-function SearchPanel({apiKey,onResults,onNeedKey}) {
+function OpenOpusSearch({onComposer,onWork,searchKey}) {
+ const [q,setQ]=React.useState(""); const [res,setRes]=React.useState(null);
+ const [loading,setLoading]=React.useState(false); const [view,setView]=React.useState(null);
+ const [popular,setPopular]=React.useState([]);
+ React.useEffect(function(){setView(null);setRes(null);},[searchKey]);
+ const searchC=async()=>{if(!q.trim())return;setLoading(true);try{var r=await fetch("https://api.openopus.org/composer/list/search/"+encodeURIComponent(q)+".json");var d=await r.json();setRes(d.composers||[]);setView("c");}catch{}finally{setLoading(false);}};
+ const loadPop=async()=>{if(popular.length){setView("p");return;}setLoading(true);try{var r=await fetch("https://api.openopus.org/composer/list/pop.json");var d=await r.json();setPopular(d.composers||[]);setView("p");}catch{}finally{setLoading(false);}};
+ const loadWorks=async(id,name)=>{onComposer&&onComposer(name);setLoading(true);try{var r=await fetch("https://api.openopus.org/work/list/composer/"+id+"/genre/all.json");var d=await r.json();setRes({name:name,works:d.works||[]});setView("w");}catch{}finally{setLoading(false);}};
+ const list=view==="w"?null:(view==="c"?res:popular);
+ return(<div style={{marginBottom:14}}>
+  <div style={{display:"flex",gap:6,marginBottom:6}}>
+   <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&searchC()} placeholder="Cerca compositore…" style={{flex:1,background:"#0a0806",border:"2px solid #5a5040",color:"#fff",padding:"9px 10px",borderRadius:4,fontSize:13,outline:"none"}}/>
+   <button onClick={loadPop} style={{background:"transparent",border:"2px solid #5a5040",color:C.gold,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>☰</button>
+   {view&&<button onClick={()=>{setView(null);setRes(null);setQ("");}} style={{background:"transparent",border:"2px solid #5a5040",color:C.muted,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>×</button>}
+  </div>
+  <button onClick={searchC} disabled={loading||!q.trim()} style={{width:"100%",background:q.trim()?C.gold:"#2a2520",color:q.trim()?"#000":"#555",border:"none",borderRadius:4,padding:"8px",fontSize:12,fontWeight:700,cursor:q.trim()?"pointer":"not-allowed",marginBottom:6}}>{loading?"…":"🔎 Cerca"}</button>
+  {list&&<div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:"40vh",overflowY:"auto"}}>
+   {view==="p"&&<div style={{color:C.gold,fontSize:10,marginBottom:6}}>POPOLARI</div>}
+   {list.map(function(comp){return(<div key={comp.id} onClick={function(){loadWorks(comp.id,comp.complete_name);}} style={{padding:"7px 8px",cursor:"pointer",borderBottom:`1px solid ${C.faint}`,display:"flex",justifyContent:"space-between"}}><span style={{color:C.cream,fontSize:13}}>{comp.complete_name}</span><span style={{color:C.muted,fontSize:11}}>{comp.epoch}</span></div>);})}
+  </div>}
+  {view==="w"&&res&&<div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:"45vh",overflowY:"auto"}}>
+   <div style={{color:C.gold,fontSize:11,fontWeight:700,marginBottom:6,display:"flex",justifyContent:"space-between"}}><span>{res.name}</span><span style={{color:C.muted,fontSize:10,cursor:"pointer"}} onClick={()=>setView("c")}>←</span></div>
+   {res.works.map(function(w){return(<div key={w.id} onClick={function(){onWork&&onWork(w.title);}} style={{padding:"5px 0",borderBottom:`1px solid ${C.faint}`,display:"flex",justifyContent:"space-between",cursor:"pointer"}}><span style={{color:C.cream,fontSize:12}}>{w.title}</span><span style={{color:C.muted,fontSize:10}}>{w.genre}</span></div>);})}
+  </div>}
+ </div>);
+}
+function SearchPanel({apiKey,onResults,onNeedKey,searchKey}) {
   const [composer,setComposer]=useState("");
   const [work,setWork]=useState("");
   const [instrument,setInstrument]=useState("");
@@ -495,7 +463,7 @@ function SearchPanel({apiKey,onResults,onNeedKey}) {
     if(!composer.trim()&&!work.trim())return;
     if(!apiKey){onNeedKey();return;}
     setLoading(true);setError(null);
-    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless: Gramophone, BBC, ClassicsToday, Guardian, Classic Review. albumTitle=titolo album, digitalEdition=formato, reviewUrls con URL reali, qobuzUrl se noto.\nJSON: {\"work\":\"x\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"albumTitle\":\"x\",\"digitalEdition\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null,\"reviewUrls\":[{\"label\":\"Gramophone\",\"url\":\"https://...\"}]}]}";
+    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless: Gramophone, BBC, ClassicsToday, Guardian, Classic Review. albumTitle, digitalEdition, reviewUrls con URL reali, qobuzUrl se noto.\nJSON: {\"work\":\"x\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"albumTitle\":\"x\",\"digitalEdition\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null,\"reviewUrls\":[{\"label\":\"Gramophone\",\"url\":\"https://...\"}]}]}";
     try{
       var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:4000,messages:[{role:"user",content:p}]})});
       if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit — aspetta 1 min.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
@@ -504,7 +472,7 @@ function SearchPanel({apiKey,onResults,onNeedKey}) {
       if(a<0||b<0)throw new Error("Formato non valido.");
       var jsonStr=cl.slice(a,b+1);
       try{onResults(JSON.parse(jsonStr));}
-      catch(e2){onResults(JSON.parse(jsonStr.replace(/,[^,]*$/,"")+"]}"));} 
+      catch(e2){onResults(JSON.parse(jsonStr.replace(/,[^,]*$/,"")+"]}"));}
     }catch(e){setError(e.message||"Errore.");}
     finally{setLoading(false);}
   };
@@ -525,6 +493,7 @@ function SearchPanel({apiKey,onResults,onNeedKey}) {
         <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#666":"#0f0d09",border:"none",borderRadius:4,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:loading?"not-allowed":"pointer"}}>
           {loading?<span>⏳ Ricerca in corso…</span>:"Cerca registrazioni"}
         </button>
+        <OpenOpusSearch onComposer={setComposer} onWork={setWork} searchKey={searchKey}/>
         {!apiKey&&<span style={{color:C.amber,fontSize:11}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
       </div>
       {error&&<p style={{color:C.red,fontSize:11,marginTop:8,marginBottom:0}}>{error}</p>}
@@ -537,6 +506,7 @@ function App() {
   const [apiKey,setApiKey]=useState(null);
   const [showSetup,setShowSetup]=useState(false);
   const [ghTok,setGhTok]=useState("");
+  const [searchKey,setSearchKey]=useState(0);
   const [library,setLibrary]=useState([]);
   const [active,setActive]=useState(null);
   const [expanded,setExpanded]=useState(null);
@@ -572,7 +542,7 @@ function App() {
         };
       }),
     };
-    setActive(entry);setExpanded(null);
+    setActive(entry);setExpanded(null);setSearchKey(function(k){return k+1;});
     // Use ref to always have current library value, avoiding stale closure
     const updated=saveLibrary([...libraryRef.current,entry]);
     libraryRef.current=updated;
@@ -624,7 +594,7 @@ function App() {
       </div>
 
       <div style={{maxWidth:880,margin:"0 auto",padding:"22px 24px"}}>
-        <SearchPanel apiKey={apiKey} onResults={handleResults} onNeedKey={()=>setShowSetup(true)}/>
+        <SearchPanel apiKey={apiKey} onResults={handleResults} onNeedKey={()=>setShowSetup(true)} searchKey={searchKey}/>
         <SourcesPanel/>
 
         {active&&<div>
