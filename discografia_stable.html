@@ -538,7 +538,7 @@ function App() {
   const [showSetup,setShowSetup]=useState(false);
   const [ghTok,setGhTok]=useState("");
   const [library,setLibrary]=useState([]);
-  const [active,setActive]=useState(BUILTIN);
+  const [active,setActive]=useState(null);
   const [expanded,setExpanded]=useState(null);
   const [showLib,setShowLib]=useState(false);
   const [flash,setFlash]=useState(false);
@@ -582,7 +582,7 @@ function App() {
   const handleDelete=id=>{
     const updated=saveLibrary(libraryRef.current.filter(e=>e.id!==id));
     libraryRef.current=updated;
-    setLibrary(updated);if(active.id===id)setActive(BUILTIN);
+    setLibrary(updated);if(active&&active.id===id)setActive(null);
   };
 
   const handleImport=guides=>{
@@ -594,7 +594,7 @@ function App() {
   if(showSetup) return <SetupScreen onSave={handleSetup}/>;
   if(apiKey===null) return null;
 
-  const isBuiltin=active.id==="builtin_bach_wtc";
+  const isBuiltin=!!(active&&active.id==="builtin_bach_wtc");
 
   return (
     <div style={{minHeight:"100vh",background:C.bg,color:C.cream,fontFamily:"'Palatino Linotype',Georgia,serif"}}>
@@ -627,6 +627,7 @@ function App() {
         <SearchPanel apiKey={apiKey} onResults={handleResults} onNeedKey={()=>setShowSetup(true)}/>
         <SourcesPanel/>
 
+        {active&&<div>
         {/* Results header */}
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14,gap:12}}>
           <div style={{flex:1}}>
@@ -660,6 +661,7 @@ function App() {
           </div>
         )}
 
+        </div>}
         <div style={{borderTop:`1px solid ${C.bg3}`,marginTop:36,paddingTop:12,color:C.faint,fontSize:10}}>
           Critica Discografica Specializzata · Maggio 2026 · Biblioteca salvata in questo browser · {library.length}/200 guide
         </div>
@@ -667,7 +669,7 @@ function App() {
 
       {/* Library modal */}
       {showLib&&<LibraryModal
-        library={library} activeId={active.id}
+        library={library} activeId={active&&active.id}
         onSelect={e=>{setActive(e);setExpanded(null);}}
         onDelete={handleDelete}
         onClose={()=>setShowLib(false)}
