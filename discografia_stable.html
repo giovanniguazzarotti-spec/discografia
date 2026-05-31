@@ -32,6 +32,12 @@ function generatePDF(entry) {
 }
 window.GH={LS:"cdc_gh_v1",tok:function(){try{return localStorage.getItem(this.LS)||"";}catch{return "";}},save:function(t){try{localStorage.setItem(this.LS,t);}catch{}}};
 </script>
+<script>
+window.addEventListener('error', function(ev) {
+  document.body.style.cssText = 'background:#1a0000;color:#fff;padding:20px;font-family:monospace;font-size:12px';
+  document.body.innerHTML = '<b>ERRORE:</b> ' + ev.message + '<br>File: ' + ev.filename + '<br>Riga: ' + ev.lineno + '<br><br>' + (ev.error ? ev.error.stack : '');
+});
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
