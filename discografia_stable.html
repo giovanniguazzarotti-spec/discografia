@@ -5,6 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Critica Discografica Classica</title>
 <script>
+function generatePDF(entry) {
+  if(!entry) return;
+  var lines=["CRITICA DISCOGRAFICA SPECIALIZZATA",""];
+  lines.push(entry.work||"");
+  if(entry.instrument) lines.push(entry.instrument);
+  lines.push("");
+  if(entry.summary) lines.push(entry.summary);
+  lines.push("");
+  (entry.recordings||[]).forEach(function(r,i){
+    lines.push((i+1)+". "+r.interpreter+" — "+r.label+" "+r.year);
+    lines.push("   Esec: "+("★".repeat(r.execStars||0))+" Reg: "+("★".repeat(r.recStars||0)));
+    if(r.execNote) lines.push("   "+r.execNote);
+    if(r.recNote) lines.push("   "+r.recNote);
+    if(r.criticalNote) lines.push("   "+r.criticalNote);
+    lines.push("");
+  });
+  if(entry.recommendation) lines.push("Consiglio: "+entry.recommendation);
+  var txt=lines.join("\n");
+  var el=document.createElement("textarea");
+  el.value=txt; el.style.position="fixed"; el.style.opacity="0";
+  document.body.appendChild(el); el.select();
+  try{document.execCommand("copy");}catch(e){}
+  document.body.removeChild(el);
+  alert("Testo copiato negli appunti!");
+}
 window.GH={LS:"cdc_gh_v1",tok:function(){try{return localStorage.getItem(this.LS)||"";}catch{return "";}},save:function(t){try{localStorage.setItem(this.LS,t);}catch{}}};
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -221,189 +246,175 @@ function Card({rec,expanded,onToggle,work,onSave}) {
   );
 }
 
-// ── LIBRARY MODAL ─────────────────────────────────────────────────────────────
 function LibraryModal({library, activeId, onSelect, onDelete, onClose, onExport}) {
-  const [search,setSearch]=useState("");
-  const [sortBy,setSortBy]=useState("date");
-  const [showExport,setShowExport]=useState(false);
-  const [pdfEntry,setPdfEntry]=useState(null);
-  const [confirmId,setConfirmId]=useState(null);
-
-  const allEntries = useMemo(()=>{
-    const withBuiltin=[{...BUILTIN,_builtin:true},...library];
-    let filtered = search.trim()
-      ? withBuiltin.filter(e=>(e.work||"").toLowerCase().includes(search.toLowerCase())||(e.instrument||"").toLowerCase().includes(search.toLowerCase()))
-      : withBuiltin;
-    if(sortBy==="title") filtered=[...filtered].sort((a,b)=>(a.work||"").localeCompare(b.work||""));
-    return filtered;
-  },[library,search,sortBy]);
-
-  const avgStars = e => {
-    const recs=e.recordings||[];
-    if(!recs.length) return 0;
-    return Math.round((recs.reduce((s,r)=>s+(r.execStars||0)+(r.recStars||0),0))/(recs.length*2));
-  };
-
-  return (
-    <div style={{position:"fixed",inset:0,background:"#000000aa",zIndex:2000,display:"flex",alignItems:"stretch",justifyContent:"flex-end"}} onClick={onClose}>
-      <div style={{width:520,maxWidth:"95vw",background:C.bg2,display:"flex",flexDirection:"column",borderLeft:`1px solid ${C.border}`,boxShadow:"-8px 0 40px #000000aa"}} onClick={e=>e.stopPropagation()}>
-
-        {/* Header */}
-        <div style={{padding:"18px 20px 14px",borderBottom:`1px solid ${C.border}`}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-            <div>
-              <span style={{color:C.gold,fontSize:13,letterSpacing:2,textTransform:"uppercase",fontFamily:"Georgia"}}>📚 Biblioteca</span>
-              <span style={{color:C.muted,fontSize:11,marginLeft:10}}>{library.length} guide salvate</span>
-            </div>
-            <button onClick={onClose} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0,lineHeight:1}}>×</button>
-          </div>
-
-          {/* Search */}
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cerca per compositore o strumento…"
-            style={{width:"100%",background:C.bg,border:`1px solid ${C.faint}`,color:C.cream,padding:"8px 11px",borderRadius:4,fontSize:12,outline:"none",marginBottom:10}}/>
-
-          <div style={{display:"flex",gap:4}}>
-            {[["Data","date"],["Titolo","title"]].map(([l,v])=>(
-              <button key={v} onClick={()=>setSortBy(v)} style={{background:sortBy===v?C.faint:"transparent",border:`1px solid ${C.faint}`,color:sortBy===v?C.gold:C.muted,padding:"4px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>↕ {l}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* Guide list */}
-        <div style={{flex:1,overflowY:"auto",padding:"10px 12px"}}>
-          {allEntries.length===0&&<div style={{color:C.muted,fontSize:12,padding:"30px",textAlign:"center",lineHeight:1.8}}>
-            {search?"Nessuna guida trovata.":"Nessuna guida salvata ancora.\nLe ricerche appariranno qui automaticamente."}
-          </div>}
-          {allEntries.map((e,i)=>{
-            const isActive=activeId===e.id;
-            const isBuiltin=e._builtin;
-            const searchIdx = isBuiltin ? 1 : allEntries.slice(0,i).filter(x=>!x._builtin).length + 2;
-            return (
-              <div key={e.id||i} onClick={()=>{onSelect(e);onClose();}}
-                style={{background:isActive?C.bg3:C.bg,border:`1px solid ${isActive?C.gold+"66":C.border}`,borderRadius:6,padding:"12px 14px",marginBottom:8,cursor:"pointer",position:"relative",transition:"border-color 0.15s"}}>
-                <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
-                  {/* Index + count */}
-                  <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0,alignItems:"center"}}>
-                    <div style={{background:"#1a1408",border:`1px solid ${C.gold}55`,borderRadius:4,padding:"4px 8px",textAlign:"center",minWidth:36}}>
-                      <div style={{color:C.goldDim,fontSize:8,letterSpacing:0.5}}>#</div>
-                      <div style={{color:C.gold,fontSize:15,fontWeight:700,fontFamily:"Georgia"}}>{searchIdx}</div>
-                    </div>
-                    <div style={{background:"#0f1a14",border:"1px solid #2a4a30",borderRadius:4,padding:"4px 8px",textAlign:"center",minWidth:36}}>
-                      <div style={{color:C.green,fontSize:14,fontWeight:700,fontFamily:"monospace"}}>{(e.recordings||[]).length}</div>
-                      <div style={{color:"#4a7a5a",fontSize:8,letterSpacing:0.5}}>rec.</div>
-                    </div>
-                  </div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{color:C.cream,fontSize:13,fontFamily:"Georgia",lineHeight:1.3,paddingRight:isBuiltin?0:22}}>{e.work}</div>
-                    <div style={{display:"flex",gap:8,marginTop:5,flexWrap:"wrap",alignItems:"center"}}>
-                      {e.instrument&&<span style={{color:C.muted,fontSize:10,background:C.faint,padding:"1px 7px",borderRadius:10}}>{e.instrument}</span>}
-                      <span style={{color:C.muted,fontSize:10}}>{e.savedAt}</span>
-                      <span style={{color:C.muted,fontSize:10}}>{(e.recordings||[]).length} registrazioni</span>
-                      <Stars n={avgStars(e)} size={10}/>
-                    </div>
-                    {/* Mini recording list */}
-                    {(e.recordings||[]).slice(0,3).map((r,ri)=>(
-                      <div key={ri} style={{color:C.muted,fontSize:10,marginTop:3,display:"flex",alignItems:"center",gap:5}}>
-                        <span style={{color:{A:C.green,B:C.amber,C:C.red}[r.level]||C.muted,fontSize:9}}>{r.level}</span>
-                        <span style={{color:C.mid}}>{r.interpreter}</span>
-                        <span style={{color:C.faint}}>· {r.label} {r.year}</span>
-                      </div>
-                    ))}
-                    {(e.recordings||[]).length>3&&<div style={{color:C.faint,fontSize:10,marginTop:2}}>+ altri {(e.recordings||[]).length-3}…</div>}
-                  </div>
-                  <div style={{display:"flex",flexDirection:"column",gap:10,flexShrink:0}}>
-                    <button onClick={ev=>{ev.stopPropagation();setPdfEntry(e);}}
-                      style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.goldDim,padding:"6px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>↓ PDF</button>
-                    {!isBuiltin&&<button onClick={ev=>{ev.stopPropagation();setConfirmId(e.id);}}
-                      style={{background:"transparent",border:"1px solid #3a2020",color:"#8a5050",padding:"6px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>× Elimina</button>}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div style={{padding:"14px 16px",borderTop:`1px solid ${C.border}`}}>
-          <button onClick={()=>setShowExport(true)} style={{width:"100%",background:"transparent",border:`1px solid ${C.gold}44`,color:C.goldDim,padding:"8px",borderRadius:4,fontSize:12,cursor:"pointer",fontFamily:"Georgia"}}>
-            ↑ Esporta biblioteca (testo copiabile)
-          </button>
-          <div style={{color:C.faint,fontSize:10,marginTop:8,textAlign:"center"}}>
-            {library.length}/200 guide · Salvate in questo browser
-          </div>
-          {showExport&&(
-            <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setShowExport(false)}>
-              <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",maxWidth:600,maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
-                <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{color:C.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase"}}>📋 Biblioteca — testo copiabile</span>
-                  <button onClick={()=>setShowExport(false)} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0}}>×</button>
-                </div>
-                <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
-                  <p style={{color:C.muted,fontSize:11}}>Tocca il testo e seleziona tutto per copiarlo.</p>
-                </div>
-                <textarea readOnly value={onExport()} onClick={e=>e.target.select()}
-                  style={{flex:1,background:"#0a0806",color:C.mid,border:"none",padding:"14px",fontSize:10,fontFamily:"monospace",lineHeight:1.6,resize:"none",outline:"none",minHeight:300}}/>
-              </div>
-            </div>
-          )}
-          {confirmId&&(
-            <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setConfirmId(null)}>
-              <div style={{background:C.bg2,border:"1px solid #3a2020",borderRadius:8,padding:"24px 28px",maxWidth:320,width:"100%",textAlign:"center"}} onClick={ev=>ev.stopPropagation()}>
-                <div style={{color:"#c96060",fontSize:15,marginBottom:10}}>Rimuovi ricerca dalla biblioteca</div>
-                <p style={{color:C.mid,fontSize:12,lineHeight:1.7,marginBottom:20}}>Rimuovere questa ricerca?</p>
-                <div style={{display:"flex",gap:10}}>
-                  <button onClick={()=>setConfirmId(null)} style={{flex:1,background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"9px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Annulla</button>
-                  <button onClick={()=>{onDelete(confirmId);setConfirmId(null);}} style={{flex:1,background:"#2a0f0f",border:"1px solid #5a2020",color:"#c96060",padding:"9px",borderRadius:4,fontSize:13,fontWeight:700,cursor:"pointer"}}>Rimuovi</button>
-                </div>
-              </div>
-            </div>
-          )}
-          {pdfEntry&&(
-            <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setPdfEntry(null)}>
-              <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",maxWidth:600,maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
-                <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{color:C.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase"}}>📋 {pdfEntry.work}</span>
-                  <button onClick={()=>setPdfEntry(null)} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0}}>×</button>
-                </div>
-                <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
-                  <p style={{color:C.muted,fontSize:11}}>Tocca il testo e seleziona tutto per copiarlo.</p>
-                </div>
-                <textarea readOnly value={onExport([pdfEntry])} onClick={e=>e.target.select()}
-                  style={{flex:1,background:"#0a0806",color:C.mid,border:"none",padding:"14px",fontSize:10,fontFamily:"monospace",lineHeight:1.6,resize:"none",outline:"none",minHeight:300}}/>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+ const [search,setSearch]=useState("");
+ const [sortBy,setSortBy]=useState("date");
+ const [showExport,setShowExport]=useState(false);
+ const [pdfEntry,setPdfEntry]=useState(null);
+ const [confirmId,setConfirmId]=useState(null);
+ const allEntries = useMemo(()=>{
+ const withBuiltin=[{...BUILTIN,_builtin:true},...library];
+ let filtered = search.trim()
+ ? withBuiltin.filter(e=>(e.work||"").toLowerCase().includes(search.toLowerCase())||(e.instrument||"").toLowerCase().includes(search.toLowerCase()))
+ : withBuiltin;
+ if(sortBy==="title") filtered=[...filtered].sort((a,b)=>(a.work||"").localeCompare(b.work||""));
+ return filtered;
+ },[library,search,sortBy]);
+ const avgStars = e => {
+ const recs=e.recordings||[];
+ if(!recs.length) return 0;
+ return Math.round((recs.reduce((s,r)=>s+(r.execStars||0)+(r.recStars||0),0))/(recs.length*2));
+ };
+ return (
+ <div style={{position:"fixed",inset:0,background:"#000000aa",zIndex:2000,display:"flex",alignItems:"stretch",justifyContent:"flex-end"}} onClick={onClose}>
+ <div style={{width:520,maxWidth:"95vw",background:C.bg2,display:"flex",flexDirection:"column",borderLeft:`1px solid ${C.border}`,boxShadow:"-8px 0 40px #000000aa"}} onClick={e=>e.stopPropagation()}>
+ {/* Header */}
+ <div style={{padding:"18px 20px 14px",borderBottom:`1px solid ${C.border}`}}>
+ <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+ <div>
+ <span style={{color:C.gold,fontSize:13,letterSpacing:2,textTransform:"uppercase",fontFamily:"Georgia"}}>📚 Biblioteca</span>
+ <span style={{color:C.muted,fontSize:11,marginLeft:10}}>{library.length} guide salvate</span>
+ </div>
+ <button onClick={onClose} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0,lineHeight:1}}>×</button>
+ </div>
+ {/* Search */}
+ <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cerca per compositore o strumento…"
+ style={{width:"100%",background:C.bg,border:`1px solid ${C.faint}`,color:C.cream,padding:"8px 11px",borderRadius:4,fontSize:12,outline:"none",marginBottom:10}}/>
+ <div style={{display:"flex",gap:4}}>
+ {[["Data","date"],["Titolo","title"]].map(([l,v])=>(
+ <button key={v} onClick={()=>setSortBy(v)} style={{background:sortBy===v?C.faint:"transparent",border:`1px solid ${C.faint}`,color:sortBy===v?C.gold:C.muted,padding:"4px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>↕ {l}</button>
+ ))}
+ </div>
+ </div>
+ {/* Guide list */}
+ <div style={{flex:1,overflowY:"auto",padding:"10px 12px"}}>
+ {allEntries.length===0&&<div style={{color:C.muted,fontSize:12,padding:"30px",textAlign:"center",lineHeight:1.8}}>
+ {search?"Nessuna guida trovata.":"Nessuna guida salvata ancora.\nLe ricerche appariranno qui automaticamente."}
+ </div>}
+ {allEntries.map((e,i)=>{
+ const isActive=activeId===e.id;
+ const isBuiltin=e._builtin;
+ const searchIdx = isBuiltin ? 1 : allEntries.slice(0,i).filter(x=>!x._builtin).length + 2;
+ return (
+ <div key={e.id||i} onClick={()=>{onSelect(e);onClose();}}
+ style={{background:isActive?C.bg3:C.bg,border:`1px solid ${isActive?C.gold+"66":C.border}`,borderRadius:6,padding:"12px 14px",marginBottom:8,cursor:"pointer",position:"relative",transition:"border-color 0.15s"}}>
+ <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+ {/* Index + count */}
+ <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0,alignItems:"center"}}>
+ <div style={{background:"#1a1408",border:`1px solid ${C.gold}55`,borderRadius:4,padding:"4px 8px",textAlign:"center",minWidth:36}}>
+ <div style={{color:C.goldDim,fontSize:8,letterSpacing:0.5}}>#</div>
+ <div style={{color:C.gold,fontSize:15,fontWeight:700,fontFamily:"Georgia"}}>{searchIdx}</div>
+ </div>
+ <div style={{background:"#0f1a14",border:"1px solid #2a4a30",borderRadius:4,padding:"4px 8px",textAlign:"center",minWidth:36}}>
+ <div style={{color:C.green,fontSize:14,fontWeight:700,fontFamily:"monospace"}}>{(e.recordings||[]).length}</div>
+ <div style={{color:"#4a7a5a",fontSize:8,letterSpacing:0.5}}>rec.</div>
+ </div>
+ </div>
+ <div style={{flex:1,minWidth:0}}>
+ <div style={{color:C.cream,fontSize:13,fontFamily:"Georgia",lineHeight:1.3,paddingRight:isBuiltin?0:22}}>{e.work}</div>
+ <div style={{display:"flex",gap:8,marginTop:5,flexWrap:"wrap",alignItems:"center"}}>
+ {e.instrument&&<span style={{color:C.muted,fontSize:10,background:C.faint,padding:"1px 7px",borderRadius:10}}>{e.instrument}</span>}
+ <span style={{color:C.muted,fontSize:10}}>{e.savedAt}</span>
+ <span style={{color:C.muted,fontSize:10}}>{(e.recordings||[]).length} registrazioni</span>
+ <Stars n={avgStars(e)} size={10}/>
+ </div>
+ {/* Mini recording list */}
+ {(e.recordings||[]).slice(0,3).map((r,ri)=>(
+ <div key={ri} style={{color:C.muted,fontSize:10,marginTop:3,display:"flex",alignItems:"center",gap:5}}>
+ <span style={{color:{A:C.green,B:C.amber,C:C.red}[r.level]||C.muted,fontSize:9}}>{r.level}</span>
+ <span style={{color:C.mid}}>{r.interpreter}</span>
+ <span style={{color:C.faint}}>· {r.label} {r.year}</span>
+ </div>
+ ))}
+ {(e.recordings||[]).length>3&&<div style={{color:C.faint,fontSize:10,marginTop:2}}>+ altri {(e.recordings||[]).length-3}…</div>}
+ </div>
+ <div style={{display:"flex",flexDirection:"column",gap:10,flexShrink:0}}>
+ <button onClick={ev=>{ev.stopPropagation();setPdfEntry(e);}}
+ style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.goldDim,padding:"6px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>↓ PDF</button>
+ {!isBuiltin&&<button onClick={ev=>{ev.stopPropagation();setConfirmId(e.id);}}
+ style={{background:"transparent",border:"1px solid #3a2020",color:"#8a5050",padding:"6px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>× Elimina</button>}
+ </div>
+ </div>
+ </div>
+ );
+ })}
+ </div>
+ <div style={{padding:"14px 16px",borderTop:`1px solid ${C.border}`}}>
+ <button onClick={()=>setShowExport(true)} style={{width:"100%",background:"transparent",border:`1px solid ${C.gold}44`,color:C.goldDim,padding:"8px",borderRadius:4,fontSize:12,cursor:"pointer",fontFamily:"Georgia"}}>
+ ↑ Esporta biblioteca (testo copiabile)
+ </button>
+ <div style={{color:C.faint,fontSize:10,marginTop:8,textAlign:"center"}}>
+ {library.length}/200 guide · Salvate localmente
+ </div>
+ {showExport&&(
+ <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setShowExport(false)}>
+ <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",maxWidth:600,maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+ <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+ <span style={{color:C.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase"}}>📋 Biblioteca — testo copiabile</span>
+ <button onClick={()=>setShowExport(false)} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0}}>×</button>
+ </div>
+ <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
+ <p style={{color:C.muted,fontSize:11}}>Tocca il testo e seleziona tutto per copiarlo.</p>
+ </div>
+ <textarea readOnly value={onExport()} onClick={e=>e.target.select()}
+ style={{flex:1,background:"#0a0806",color:C.mid,border:"none",padding:"14px",fontSize:10,fontFamily:"monospace",lineHeight:1.6,resize:"none",outline:"none",minHeight:300}}/>
+ </div>
+ </div>
+ )}
+ {confirmId&&(
+ <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setConfirmId(null)}>
+ <div style={{background:C.bg2,border:"1px solid #3a2020",borderRadius:8,padding:"24px 28px",maxWidth:320,width:"100%",textAlign:"center"}} onClick={ev=>ev.stopPropagation()}>
+ <div style={{color:"#c96060",fontSize:15,marginBottom:10}}>Rimuovi ricerca dalla biblioteca</div>
+ <p style={{color:C.mid,fontSize:12,lineHeight:1.7,marginBottom:20}}>Rimuovere questa ricerca?</p>
+ <div style={{display:"flex",gap:10}}>
+ <button onClick={()=>setConfirmId(null)} style={{flex:1,background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"9px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Annulla</button>
+ <button onClick={()=>{onDelete(confirmId);setConfirmId(null);}} style={{flex:1,background:"#2a0f0f",border:"1px solid #5a2020",color:"#c96060",padding:"9px",borderRadius:4,fontSize:13,fontWeight:700,cursor:"pointer"}}>Rimuovi</button>
+ </div>
+ </div>
+ </div>
+ )}
+ {pdfEntry&&(
+ <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setPdfEntry(null)}>
+ <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",maxWidth:600,maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+ <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+ <span style={{color:C.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase"}}>📋 {pdfEntry.work}</span>
+ <button onClick={()=>setPdfEntry(null)} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0}}>×</button>
+ </div>
+ <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
+ <p style={{color:C.muted,fontSize:11}}>Tocca il testo e seleziona tutto per copiarlo.</p>
+ </div>
+ <textarea readOnly value={onExport([pdfEntry])} onClick={e=>e.target.select()}
+ style={{flex:1,background:"#0a0806",color:C.mid,border:"none",padding:"14px",fontSize:10,fontFamily:"monospace",lineHeight:1.6,resize:"none",outline:"none",minHeight:300}}/>
+ </div>
+ </div>
+ )}
+ </div>
+ </div>
+ </div>
+ );
 }
-
-// ── SOURCES PANEL ─────────────────────────────────────────────────────────────
 function SourcesPanel() {
-  const [open,setOpen]=useState(false);
-  return (
-    <div style={{marginBottom:16}}>
-      <button onClick={()=>setOpen(!open)} style={{background:"transparent",border:"1px solid #5a5040",color:"#c8bfad",padding:"7px 14px",borderRadius:4,fontSize:12,cursor:"pointer",letterSpacing:1}}>
-        {open?"▲":"▼"} Fonti specializzate ({SOURCES.length})
-      </button>
-      {open&&(
-        <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:12,marginTop:8,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
-          {SOURCES.map(s=>(
-            <a key={s.name} href={s.url} target="_blank" rel="noreferrer" style={{textDecoration:"none"}}>
-              <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:4,padding:"7px 9px"}}>
-                <div style={{color:C.gold,fontSize:12,fontWeight:700}}>{s.name}</div>
-                <div style={{color:"#b0a48a",fontSize:10,marginTop:2,lineHeight:1.4}}>{s.desc}</div>
-              </div>
-            </a>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+ const [open,setOpen]=useState(false);
+ return (
+ <div style={{marginBottom:16}}>
+ <button onClick={()=>setOpen(!open)} style={{background:"transparent",border:"1px solid #5a5040",color:"#c8bfad",padding:"7px 14px",borderRadius:4,fontSize:12,cursor:"pointer",letterSpacing:1}}>
+ {open?"▲":"▼"} Fonti specializzate ({SOURCES.length})
+ </button>
+ {open&&(
+ <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:12,marginTop:8,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
+ {SOURCES.map(s=>(
+ <a key={s.name} href={s.url} target="_blank" rel="noreferrer" style={{textDecoration:"none"}}>
+ <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:4,padding:"7px 9px"}}>
+ <div style={{color:C.gold,fontSize:12,fontWeight:700}}>{s.name}</div>
+ <div style={{color:"#b0a48a",fontSize:10,marginTop:2,lineHeight:1.4}}>{s.desc}</div>
+ </div>
+ </a>
+ ))}
+ </div>
+ )}
+ </div>
+ );
 }
-
-// ── SEARCH PANEL ──────────────────────────────────────────────────────────────
-
 function OpenOpusSearch({onComposer,onWork,searchKey}) {
  const [q,setQ]=React.useState("");
  const [res,setRes]=React.useState(null);
@@ -498,54 +509,50 @@ function OpenOpusSearch({onComposer,onWork,searchKey}) {
  </div>
  );
 }
-
 function SearchPanel({apiKey,onResults,onNeedKey,searchKey,setSearchKey}) {
-  const [composer,setComposer]=useState("");
-  const [work,setWork]=useState("");
-  const [instrument,setInstrument]=useState("");
-  const [loading,setLoading]=useState(false);
-  const [error,setError]=useState(null);
-
-  const search=async()=>{
-    if(!composer.trim()&&!work.trim())return;
-    if(!apiKey){onNeedKey();return;}
-    setLoading(true);setError(null);setSearchKey&&setSearchKey(function(k){return k+1;});
-    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless: Gramophone, BBC, ClassicsToday, Guardian, Classic Review.\nPer ogni registrazione indica: il titolo ESATTO dell album come appare su Qobuz (albumTitle), e il formato digitale disponibile come es. Hi-Res 24bit/96kHz o CD 16bit/44kHz con etichetta e anno edizione digitale (digitalEdition).\nJSON COMPATTO: {\"work\":\"Compositore - Opera\",\"instrument\":\"str\",\"summary\":\"testo\",\"recommendation\":\"testo\",\"recordings\":[{\"rank\":1,\"interpreter\":\"nome\",\"label\":\"etichetta\",\"year\":\"anno\",\"books\":\"vol\",\"albumTitle\":\"titolo preciso album\",\"digitalEdition\":\"es. Hi-Res 24bit/96kHz - BIS Records 2024 o CD 16bit/44kHz - Naive 2003\",\"execStars\":5,\"recStars\":4,\"consensus\":\"unanime\",\"consensusIcon\":\"🟢\",\"execNote\":\"nota\",\"recNote\":\"nota\",\"criticalNote\":\"nota breve\",\"reviewUrls\":[{\"label\":\"Gramophone\",\"url\":\"URL REALE recensione su gramophone.co.uk\"},{\"label\":\"BBC Music\",\"url\":\"URL REALE su classical-music.com\"}],\"qobuzUrl\":null}]}";
-    try{
-      var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:4000,messages:[{role:"user",content:p}]})});
-      if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit — aspetta 1 min.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
-      var d=await r.json();var t=(d.content||[]).map(function(b){return b.text||"";}).join("");
-      var cl=t.replace(/```json|```/g,"").trim();var a=cl.indexOf("{"),b=cl.lastIndexOf("}");
-      if(a<0||b<0)throw new Error("Formato non valido.");
-      var jsonStr=cl.slice(a,b+1);
-      try{onResults(JSON.parse(jsonStr));}
-      catch(e2){onResults(JSON.parse(jsonStr.replace(/,[^,]*$/,"")+"]}"));}
-    }catch(e){setError(e.message||"Errore.");}
-    finally{setLoading(false);}
-  };
-
-  return (
-    <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:18,marginBottom:20}}>
-      <h3 style={{color:C.gold,margin:"0 0 14px",fontSize:14,letterSpacing:2,textTransform:"uppercase"}}>🔍 Cerca nuova opera</h3>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:9,marginBottom:11}}>
-        {[["Compositore",composer,setComposer,"Schubert…","f1"],["Opera",work,setWork,"Winterreise…","f2"],["Strumento",instrument,setInstrument,"pianoforte…","f3"]].map(([l,v,s,p,f])=>(
-          <div key={l}>
-            <label style={{color:"#c8bfad",fontSize:12,textTransform:"uppercase",display:"block",marginBottom:4}}>{l}</label>
-            <input id={f} value={v} onChange={e=>s(e.target.value)} placeholder={p} onKeyDown={e=>{if(e.key==="Enter"){if(l==="Compositore")document.getElementById("f2")&&document.getElementById("f2").focus();else if(l==="Opera")document.getElementById("f3")&&document.getElementById("f3").focus();else search();}}}
-              style={{width:"100%",background:"#0a0806",border:"2px solid #7a6a50",color:"#ffffff",padding:"9px 11px",borderRadius:4,fontSize:14,outline:"none"}}/>
-          </div>
-        ))}
-      </div>
-      <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#888":"#000000",border:"none",borderRadius:4,padding:"10px",fontSize:14,fontWeight:700,cursor:loading?"not-allowed":"pointer",width:"100%",marginBottom:12}}>
-        {loading?<span>⏳ Ricerca in corso…</span>:"Cerca"}
-      </button>
-      {!apiKey&&<span style={{color:C.amber,fontSize:11,display:"block",marginBottom:8}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
-      <OpenOpusSearch onComposer={setComposer} onWork={setWork} searchKey={searchKey}/>
-      {error&&<p style={{color:C.red,fontSize:11,marginTop:8,marginBottom:0}}>{error}</p>}
-    </div>
-  );
+ const [composer,setComposer]=useState("");
+ const [work,setWork]=useState("");
+ const [instrument,setInstrument]=useState("");
+ const [loading,setLoading]=useState(false);
+ const [error,setError]=useState(null);
+ const search=async()=>{
+ if(!composer.trim()&&!work.trim())return;
+ if(!apiKey){onNeedKey();return;}
+ setLoading(true);setError(null);setSearchKey&&setSearchKey(function(k){return k+1;});
+ var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless: Gramophone, BBC, ClassicsToday, Guardian, Classic Review.\nPer ogni registrazione indica: il titolo ESATTO dell album come appare su Qobuz (albumTitle), e il formato digitale disponibile come es. Hi-Res 24bit/96kHz o CD 16bit/44kHz con etichetta e anno edizione digitale (digitalEdition).\nJSON COMPATTO: {\"work\":\"Compositore - Opera\",\"instrument\":\"str\",\"summary\":\"testo\",\"recommendation\":\"testo\",\"recordings\":[{\"rank\":1,\"interpreter\":\"nome\",\"label\":\"etichetta\",\"year\":\"anno\",\"books\":\"vol\",\"albumTitle\":\"titolo preciso album\",\"digitalEdition\":\"es. Hi-Res 24bit/96kHz - BIS Records 2024 o CD 16bit/44kHz - Naive 2003\",\"execStars\":5,\"recStars\":4,\"consensus\":\"unanime\",\"consensusIcon\":\"🟢\",\"execNote\":\"nota\",\"recNote\":\"nota\",\"criticalNote\":\"nota breve\",\"reviewUrls\":[{\"label\":\"Gramophone\",\"url\":\"URL REALE recensione su gramophone.co.uk\"},{\"label\":\"BBC Music\",\"url\":\"URL REALE su classical-music.com\"}],\"qobuzUrl\":null}]}";
+ try{
+ var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:4000,messages:[{role:"user",content:p}]})});
+ if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit — aspetta 1 min.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
+ var d=await r.json();var t=(d.content||[]).map(function(b){return b.text||"";}).join("");
+ var cl=t.replace(/```json|```/g,"").trim();var a=cl.indexOf("{"),b=cl.lastIndexOf("}");
+ if(a<0||b<0)throw new Error("Formato non valido.");
+ var jsonStr=cl.slice(a,b+1);
+ try{onResults(JSON.parse(jsonStr));}
+ catch(e2){onResults(JSON.parse(jsonStr.replace(/,[^,]*$/,"")+"]}"));}
+ }catch(e){setError(e.message||"Errore.");}
+ finally{setLoading(false);}
+ };
+ return (
+ <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:18,marginBottom:20}}>
+ <h3 style={{color:C.gold,margin:"0 0 14px",fontSize:14,letterSpacing:2,textTransform:"uppercase"}}>🔍 Cerca nuova opera</h3>
+ <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:9,marginBottom:11}}>
+ {[["Compositore",composer,setComposer,"Schubert…","f1"],["Opera",work,setWork,"Winterreise…","f2"],["Strumento",instrument,setInstrument,"pianoforte…","f3"]].map(([l,v,s,p,f])=>(
+ <div key={l}>
+ <label style={{color:"#c8bfad",fontSize:12,textTransform:"uppercase",display:"block",marginBottom:4}}>{l}</label>
+ <input id={f} value={v} onChange={e=>s(e.target.value)} placeholder={p} onKeyDown={e=>{if(e.key==="Enter"){if(l==="Compositore")document.getElementById("f2")&&document.getElementById("f2").focus();else if(l==="Opera")document.getElementById("f3")&&document.getElementById("f3").focus();else search();}}}
+ style={{width:"100%",background:"#0a0806",border:"2px solid #7a6a50",color:"#ffffff",padding:"9px 11px",borderRadius:4,fontSize:14,outline:"none"}}/>
+ </div>
+ ))}
+ </div>
+ <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#888":"#000000",border:"none",borderRadius:4,padding:"10px",fontSize:14,fontWeight:700,cursor:loading?"not-allowed":"pointer",width:"100%",marginBottom:12}}>
+ {loading?<span>⏳ Ricerca in corso…</span>:"Cerca"}
+ </button>
+ {!apiKey&&<span style={{color:C.amber,fontSize:11,display:"block",marginBottom:8}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
+ <OpenOpusSearch onComposer={setComposer} onWork={setWork} searchKey={searchKey}/>
+ {error&&<p style={{color:C.red,fontSize:11,marginTop:8,marginBottom:0}}>{error}</p>}
+ </div>
+ );
 }
-
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
 function App() {
   const [apiKey,setApiKey]=useState(null);
