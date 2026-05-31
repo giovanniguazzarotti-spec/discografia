@@ -512,12 +512,14 @@ function SearchPanel({apiKey,onResults,onNeedKey,searchKey,setSearchKey}) {
     setLoading(true);setError(null);setSearchKey&&setSearchKey(function(k){return k+1;});
     var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless: Gramophone, BBC, ClassicsToday, Guardian, Classic Review.\nPer ogni registrazione indica: il titolo ESATTO dell album come appare su Qobuz (albumTitle), e il formato digitale disponibile come es. Hi-Res 24bit/96kHz o CD 16bit/44kHz con etichetta e anno edizione digitale (digitalEdition).\nJSON COMPATTO: {\"work\":\"Compositore - Opera\",\"instrument\":\"str\",\"summary\":\"testo\",\"recommendation\":\"testo\",\"recordings\":[{\"rank\":1,\"interpreter\":\"nome\",\"label\":\"etichetta\",\"year\":\"anno\",\"books\":\"vol\",\"albumTitle\":\"titolo preciso album\",\"digitalEdition\":\"es. Hi-Res 24bit/96kHz - BIS Records 2024 o CD 16bit/44kHz - Naive 2003\",\"execStars\":5,\"recStars\":4,\"consensus\":\"unanime\",\"consensusIcon\":\"🟢\",\"execNote\":\"nota\",\"recNote\":\"nota\",\"criticalNote\":\"nota breve\",\"reviewUrls\":[{\"label\":\"Gramophone\",\"url\":\"URL REALE recensione su gramophone.co.uk\"},{\"label\":\"BBC Music\",\"url\":\"URL REALE su classical-music.com\"}],\"qobuzUrl\":null}]}";
     try{
-      var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:3000,messages:[{role:"user",content:p}]})});
+      var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:4000,messages:[{role:"user",content:p}]})});
       if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit — aspetta 1 min.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
       var d=await r.json();var t=(d.content||[]).map(function(b){return b.text||"";}).join("");
       var cl=t.replace(/```json|```/g,"").trim();var a=cl.indexOf("{"),b=cl.lastIndexOf("}");
       if(a<0||b<0)throw new Error("Formato non valido.");
-      onResults(JSON.parse(cl.slice(a,b+1)));
+      var jsonStr=cl.slice(a,b+1);
+      try{onResults(JSON.parse(jsonStr));}
+      catch(e2){onResults(JSON.parse(jsonStr.replace(/,[^,]*$/,"")+"]}"));}
     }catch(e){setError(e.message||"Errore.");}
     finally{setLoading(false);}
   };
