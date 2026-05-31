@@ -435,20 +435,30 @@ function OpenOpusSearch({onComposer,onWork,searchKey}) {
  const searchC=async()=>{if(!q.trim())return;setLoading(true);setErr("");
   try{var r=await fetch("https://api.openopus.org/composer/list/search/"+encodeURIComponent(q)+".json");var d=await r.json();setRes(d.composers||[]);setView("c");}
   catch(ex){setErr("Errore ricerca: "+ex.message);}finally{setLoading(false);}};
- const loadPop=async()=>{if(popular.length){setView("p");return;}setLoading(true);setErr("");
-  try{var r=await fetch("https://api.openopus.org/composer/list/pop.json");if(!r.ok)throw new Error("HTTP "+r.status);var d=await r.json();if(!d.composers||!d.composers.length)throw new Error("Nessun compositore");setPopular(d.composers);setView("p");}
-  catch(ex){setErr("Errore caricamento: "+ex.message);}finally{setLoading(false);}};
+ const loadPop=async()=>{
+  if(popular.length){setView("p");return;}
+  setLoading(true);setErr("");
+  try{
+   var r=await fetch("https://api.openopus.org/composer/list/pop.json");
+   if(!r.ok)throw new Error("HTTP "+r.status);
+   var d=await r.json();
+   if(!d.composers||!d.composers.length)throw new Error("Nessun dato");
+   setPopular(d.composers);setView("p");
+  }catch(ex){setErr("Errore: "+ex.message);}
+  finally{setLoading(false);}
+ };
  const loadWorks=async(id,name)=>{onComposer&&onComposer(name);setLoading(true);try{var r=await fetch("https://api.openopus.org/work/list/composer/"+id+"/genre/all.json");var d=await r.json();setRes({name:name,works:d.works||[]});setView("w");}catch{}finally{setLoading(false);}};
  const list=view==="w"?null:(view==="c"?res:popular);
  return(<div style={{marginBottom:14}}>
   <div style={{display:"flex",gap:6,marginBottom:6}}>
    <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&searchC()} placeholder="Cerca compositore…" style={{flex:1,background:"#0a0806",border:"2px solid #5a5040",color:"#fff",padding:"9px 10px",borderRadius:4,fontSize:13,outline:"none"}}/>
-   <button onClick={loadPop} style={{background:"transparent",border:"2px solid #5a5040",color:C.gold,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>☰</button>
+   <button onClick={loadPop} style={{background:"transparent",border:"2px solid #5a5040",color:C.gold,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>{loading?"⏳":"☰"}</button>
    {view&&<button onClick={()=>{setView(null);setRes(null);setQ("");}} style={{background:"transparent",border:"2px solid #5a5040",color:C.muted,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>×</button>}
   </div>
   <button onClick={searchC} disabled={loading||!q.trim()} style={{width:"100%",background:q.trim()?C.gold:"#2a2520",color:q.trim()?"#000":"#555",border:"none",borderRadius:4,padding:"8px",fontSize:12,fontWeight:700,cursor:q.trim()?"pointer":"not-allowed",marginBottom:6}}>{loading?"…":"🔎 Cerca"}</button>
   {err&&<div style={{color:C.red,fontSize:11,marginTop:4}}>{err}</div>}
-  {list&&<div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:"40vh",overflowY:"auto"}}>
+  {loading&&<div style={{color:C.muted,fontSize:11,marginTop:4}}>Caricamento...</div>}
+  {view&&(view==="c"||view==="p")&&list&&<div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:"40vh",overflowY:"auto"}}>
    {view==="p"&&<div style={{color:C.gold,fontSize:10,marginBottom:6}}>POPOLARI</div>}
    {list.map(function(comp){return(<div key={comp.id} onClick={function(){loadWorks(comp.id,comp.complete_name);}} style={{padding:"7px 8px",cursor:"pointer",borderBottom:`1px solid ${C.faint}`,display:"flex",justifyContent:"space-between"}}><span style={{color:C.cream,fontSize:13}}>{comp.complete_name}</span><span style={{color:C.muted,fontSize:11}}>{comp.epoch}</span></div>);})}
   </div>}
