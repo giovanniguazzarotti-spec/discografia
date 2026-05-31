@@ -632,8 +632,8 @@ function App() {
 
         {/* Legend */}
         <div style={{display:"flex",gap:14,marginBottom:12,flexWrap:"wrap"}}>
-          {[["🟢 Unanime",C.green],["🟡 Qualche riserva",C.amber],["🔴 Diviso",C.red]].map(([t,c])=>(
-            <span key={t} style={{color:c,fontSize:10}}>{t}</span>
+          {[["🟢 Unanime",C.green],["🟡 Qualche riserva",C.amber],["🔴 Diviso",C.red]].map(([t,col])=>(
+            <span key={t} style={{color:col,fontSize:10}}>{t}</span>
           ))}
           <span style={{color:"#3a3a3a",fontSize:10,marginLeft:"auto"}}>▼ Clicca per espandere</span>
         </div>
