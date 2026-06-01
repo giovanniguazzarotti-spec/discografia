@@ -141,7 +141,7 @@ function SetupScreen({onSave}) {
         <div style={{textAlign:"center",marginBottom:32}}>
           <div style={{color:C.gold,fontSize:10,letterSpacing:3,textTransform:"uppercase",marginBottom:12}}>Critica Discografica Specializzata</div>
           <h1 style={{color:C.cream,fontWeight:400,fontSize:26,marginBottom:8}}>Configurazione chiave API</h1>
-          <p style={{color:C.mid,fontSize:13,lineHeight:1.7}}>Inserisci la chiave API Anthropic per la ricerca AI.</p>
+          <p style={{color:C.mid,fontSize:13,lineHeight:1.7}}>Per usare la ricerca AI inserisci la tua chiave API Anthropic.<br/>Puoi usare l'app anche senza — i dati Bach precaricati sono sempre disponibili.</p>
         </div>
         <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:24,marginBottom:16}}>
           <label style={{color:C.muted,fontSize:10,letterSpacing:1.5,textTransform:"uppercase",display:"block",marginBottom:8}}>Chiave API Anthropic</label>
@@ -152,12 +152,11 @@ function SetupScreen({onSave}) {
             <button onClick={()=>setShow(!show)} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"0 12px",borderRadius:4,fontSize:12,cursor:"pointer"}}>{show?"Nascondi":"Mostra"}</button>
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>key.trim()&&onSave(key.trim())} disabled={!key.trim()} style={{flex:1,background:key.trim()?C.gold:"#2a2520",color:key.trim()?"#0f0d09":"#555",border:"none",borderRadius:4,padding:"10px",fontSize:14,fontWeight:700,cursor:key.trim()?"pointer":"not-allowed"}}>Salva</button>
-            <button onClick={()=>onSave("")} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"10px 16px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Salta</button>
+            <button onClick={()=>key.trim()&&onSave(key.trim())} disabled={!key.trim()} style={{flex:1,background:key.trim()?C.gold:"#2a2520",color:key.trim()?"#0f0d09":"#555",border:"none",borderRadius:4,padding:"10px",fontSize:14,fontWeight:700,cursor:key.trim()?"pointer":"not-allowed"}}>Salva e apri l'app</button>
+            <button onClick={()=>onSave("")} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"10px 16px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Salta (solo Bach)</button>
           </div>
         </div>
-      </div>
-    </div>
+
   );
 }
 
@@ -207,10 +206,10 @@ function Card({rec,expanded,onToggle,work,onSave}) {
             <p style={{color:C.mid,fontSize:11,margin:0,lineHeight:1.65}}>{rec.criticalNote}</p>
           </div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
-            <button onClick={e=>{e.stopPropagation();window.open("https://open.qobuz.com","_blank");}} style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>📱 Qobuz</button>
-            {(()=>{var first=(rec.qobuz||[]).find(q=>q.url&&toOpenQobuz(q.url));return first?<button onClick={e=>{e.stopPropagation();window.open(toOpenQobuz(first.url),"_blank");}} style={{background:"#0e2a1a",border:"1px solid #1a5a30",color:"#4acf7a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>🎵 Ascolta</button>:null;})()}
-            {onSave&&<span style={{display:"inline-flex",gap:4,alignItems:"center"}} onClick={e=>e.stopPropagation()}><input id={"qu-"+rec.rank} placeholder="URL Qobuz..." style={{background:"#0a0806",border:"1px solid #2a5a2a",color:"#f0ead6",padding:"4px 8px",borderRadius:4,fontSize:10,outline:"none",width:160}}/><button onClick={e=>{e.stopPropagation();var inp=document.getElementById("qu-"+rec.rank);var raw=inp?inp.value.trim():"";var m=raw.match(/https:\/\/open\.qobuz\.com\/album\/\w+/);var url=m?m[0]:(raw.startsWith("http")?raw:"");if(url){onSave(rec,url);inp.value="";}}} style={{background:"#1a3a1a",border:"1px solid #2a5a2a",color:"#7acf9a",padding:"4px 8px",borderRadius:4,fontSize:10,cursor:"pointer"}}>💾</button></span>}
-            {(rec.reviews||[]).map((r,i)=>(<button key={i} onClick={e=>{e.stopPropagation();window.open(r.url,"_blank");}} style={{background:"#1a1f3a",border:"1px solid #2a3a6a",color:"#7a9acf",padding:"4px 10px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>📰 {r.label}</button>))}
+            <button onClick={e=>{e.stopPropagation();window.open("https://open.qobuz.com","_blank");}} style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📱 Qobuz</button>
+            {(()=>{var first=(rec.qobuz||[]).find(q=>q.url&&toOpenQobuz(q.url));return first?<button onClick={e=>{e.stopPropagation();window.open(toOpenQobuz(first.url),"_blank");}} style={{background:"#0e2a1a",border:"1px solid #1a5a30",color:"#4acf7a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>🎵 Ascolta</button>:null;})()}
+            {onSave&&<span onClick={e=>e.stopPropagation()} style={{display:"inline-flex",gap:4,alignItems:"center"}}><input id={"qu-"+rec.rank} placeholder="URL Qobuz..." style={{background:"#0a0806",border:"1px solid #2a5a2a",color:"#f0ead6",padding:"4px 8px",borderRadius:4,fontSize:10,outline:"none",width:160}}/><button onClick={e=>{e.stopPropagation();var inp=document.getElementById("qu-"+rec.rank);var raw=inp?inp.value.trim():"";var m=raw.match(/https:..open\.qobuz\.com.album.\w+/);var url=m?m[0]:(raw.startsWith("http")?raw:"");if(url){onSave(rec,url);inp.value="";}}} style={{background:"#1a3a1a",border:"1px solid #2a5a2a",color:"#7acf9a",padding:"4px 8px",borderRadius:4,fontSize:10,cursor:"pointer"}}>💾</button></span>}
+            {(rec.reviews||[]).map((r,i)=>(<button key={i} onClick={e=>{e.stopPropagation();window.open(r.url,"_blank");}} style={{background:"#1a1f3a",border:"1px solid #2a3a6a",color:"#7a9acf",padding:"4px 10px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📰 {r.label}</button>))}
           </div>
         </div>
       )}
@@ -405,47 +404,65 @@ function OpenOpusSearch({onComposer,onWork,searchKey}) {
  const [q,setQ]=React.useState(""); const [res,setRes]=React.useState(null);
  const [loading,setLoading]=React.useState(false); const [view,setView]=React.useState(null);
  const [popular,setPopular]=React.useState([]);
+ const FALLBACK=[[87,"Bach"],[145,"Beethoven"],[33,"Brahms"],[196,"Chopin"],[56,"Debussy"],[43,"Dvořák"],[49,"Handel"],[53,"Haydn"],[60,"Liszt"],[64,"Mahler"],[97,"Mozart"],[107,"Prokofiev"],[110,"Rachmaninoff"],[104,"Schubert"],[129,"Schumann"],[159,"Tchaikovsky"],[175,"Vivaldi"],[181,"Wagner"]];
  React.useEffect(function(){setView(null);setRes(null);},[searchKey]);
- const searchC=async()=>{if(!q.trim())return;setLoading(true);
+ const searchC=async()=>{
+ if(!q.trim())return;setLoading(true);
  try{var r=await fetch("https://api.openopus.org/composer/list/search/"+encodeURIComponent(q)+".json");
- if(!r.ok)throw new Error("down");var d=await r.json();
+ if(!r.ok)throw new Error();var d=await r.json();
  setRes((d.composers||[]).map(function(x){return[parseInt(x.id),x.complete_name];}));setView("c");
- }catch(ex){}
- }finally{setLoading(false);}};
+ }catch(ex){}finally{setLoading(false);}
+ };
  const loadPop=async()=>{
  if(popular.length){setView("p");return;}setLoading(true);
  try{var r=await fetch("https://api.openopus.org/composer/list/pop.json");
- if(!r.ok)throw new Error("down");var d=await r.json();
- if(!d.composers||!d.composers.length)throw new Error("vuoto");
+ if(!r.ok)throw new Error();var d=await r.json();
+ if(!d.composers||!d.composers.length)throw new Error();
  setPopular(d.composers.map(function(x){return[parseInt(x.id),x.complete_name];}));setView("p");
- }catch(ex){setPopular(FALLBACK);setView("p");}
- finally{setLoading(false);}
+ }catch(ex){setPopular(FALLBACK);setView("p");}finally{setLoading(false);}
  };
  const loadWorks=async(id,name)=>{
-  onComposer&&onComposer(name);setLoading(true);
-  try{var r=await fetch("https://api.openopus.org/work/list/composer/"+id+"/genre/all.json");
-   if(!r.ok)throw new Error("down");var d=await r.json();
-   setRes({name:name,works:(d.works||[]).map(function(w){return{title:w.title,genre:w.genre};})});setView("w");
-  }catch(ex){setRes({name:name,works:[]});setView("w");}
-  finally{setLoading(false);}
+ onComposer&&onComposer(name);setLoading(true);
+ try{var r=await fetch("https://api.openopus.org/work/list/composer/"+id+"/genre/all.json");
+ if(!r.ok)throw new Error();var d=await r.json();
+ setRes({name:name,works:(d.works||[]).map(function(w){return{title:w.title,genre:w.genre};})});setView("w");
+ }catch(ex){setRes({name:name,works:[]});setView("w");}finally{setLoading(false);}
  };
- const list=(view==="c"||view==="p")?(view==="c"?res:popular):null;
- return(<div style={{marginBottom:14}}>
+ var list=(view==="c"||view==="p")?(view==="c"?res:popular):null;
+ return(
+ <div style={{marginBottom:14}}>
  <div style={{display:"flex",gap:6,marginBottom:6}}>
- <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&searchC()} placeholder="Cerca…" style={{flex:1,background:"#0a0806",border:"2px solid #5a5040",color:"#fff",padding:"9px 10px",borderRadius:4,fontSize:13,outline:"none"}}/>
+ <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&searchC()} placeholder="Cerca compositore..." style={{flex:1,background:"#0a0806",border:"2px solid #5a5040",color:"#fff",padding:"9px 10px",borderRadius:4,fontSize:13,outline:"none"}}/>
  <button onClick={loadPop} style={{background:"transparent",border:"2px solid #5a5040",color:C.gold,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>{loading?"⏳":"☰"}</button>
  {view&&<button onClick={()=>{setView(null);setRes(null);setQ("");}} style={{background:"transparent",border:"2px solid #5a5040",color:C.muted,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>×</button>}
  </div>
- <button onClick={searchC} disabled={loading||!q.trim()} style={{width:"100%",background:q.trim()?C.gold:"#2a2520",color:q.trim()?"#000":"#555",border:"none",borderRadius:4,padding:"8px",fontSize:12,fontWeight:700,cursor:q.trim()?"pointer":"not-allowed",marginBottom:6}}>{loading?"…":"🔎 Cerca"}</button>
- {list&&list.length>0&&<div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:"40vh",overflowY:"auto"}}>
+ <button onClick={searchC} disabled={loading||!q.trim()} style={{width:"100%",background:q.trim()?C.gold:"#2a2520",color:q.trim()?"#000":"#555",border:"none",borderRadius:4,padding:"8px",fontSize:12,fontWeight:700,cursor:q.trim()?"pointer":"not-allowed",marginBottom:6}}>{loading?"...":"🔎 Cerca"}</button>
+ {list&&list.length>0&&(
+ <div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:6,padding:8,maxHeight:"40vh",overflowY:"auto"}}>
  {view==="p"&&<div style={{color:C.gold,fontSize:10,marginBottom:6}}>POPOLARI</div>}
- {list.map(function(comp){return(<div key={comp[0]} onClick={function(){loadWorks(comp[0],comp[1]);}} style={{padding:"7px 8px",cursor:"pointer",borderBottom:`1px solid ${C.faint}`,display:"flex",justifyContent:"space-between"}}><span style={{color:C.cream,fontSize:13}}>{comp[1]}</span></div>);})}
- </div>}
- {view==="w"&&res&&<div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:6,padding:8,maxHeight:"45vh",overflowY:"auto"}}>
- <div style={{color:C.gold,fontSize:11,fontWeight:700,marginBottom:6,display:"flex",justifyContent:"space-between"}}><span>{res.name}</span><span style={{color:C.muted,fontSize:10,cursor:"pointer"}} onClick={()=>setView("c")}>←</span></div>
- {(res.works||[]).map(function(w,i){return(<div key={i} onClick={function(){onWork&&onWork(w.title);}} style={{padding:"5px 0",borderBottom:`1px solid ${C.faint}`,display:"flex",justifyContent:"space-between",cursor:"pointer"}}><span style={{color:C.cream,fontSize:12}}>{w.title}</span><span style={{color:C.muted,fontSize:10}}>{w.genre}</span></div>);})}
- </div>}
- </div>);
+ {list.map(function(comp){return(
+ <div key={comp[0]} onClick={function(){loadWorks(comp[0],comp[1]);}} style={{padding:"7px 8px",cursor:"pointer",borderBottom:"1px solid "+C.faint,display:"flex",justifyContent:"space-between"}}>
+ <span style={{color:C.cream,fontSize:13}}>{comp[1]}</span>
+ </div>
+ );})}
+ </div>
+ )}
+ {view==="w"&&res&&(
+ <div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:6,padding:8,maxHeight:"45vh",overflowY:"auto"}}>
+ <div style={{color:C.gold,fontSize:11,fontWeight:700,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
+ <span>{res.name}</span>
+ <span style={{color:C.muted,fontSize:10,cursor:"pointer"}} onClick={()=>setView("c")}>←</span>
+ </div>
+ {(res.works||[]).map(function(w,i){return(
+ <div key={i} onClick={function(){onWork&&onWork(w.title);}} style={{padding:"5px 0",borderBottom:"1px solid "+C.faint,display:"flex",justifyContent:"space-between",cursor:"pointer"}}>
+ <span style={{color:C.cream,fontSize:12}}>{w.title}</span>
+ <span style={{color:C.muted,fontSize:10}}>{w.genre}</span>
+ </div>
+ );})}
+ </div>
+ )}
+ </div>
+ );
 }
 
 function SearchPanel({apiKey,onResults,onNeedKey,searchKey}) {
@@ -485,11 +502,12 @@ function SearchPanel({apiKey,onResults,onNeedKey,searchKey}) {
           </div>
         ))}
       </div>
-      <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{width:"100%",background:loading?"#2a2520":C.gold,color:loading?"#666":"#0f0d09",border:"none",borderRadius:4,padding:"10px",fontSize:13,fontWeight:700,cursor:loading?"not-allowed":"pointer",marginBottom:12}}>
-        {loading?<span>⏳ Ricerca in corso…</span>:"Cerca registrazioni"}
-      </button>
-      {!apiKey&&<span style={{color:C.amber,fontSize:11,display:"block",marginBottom:8}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
-      <OpenOpusSearch onComposer={setComposer} onWork={setWork} searchKey={searchKey}/>
+      <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#666":"#0f0d09",border:"none",borderRadius:4,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:loading?"not-allowed":"pointer"}}>
+          {loading?<span>⏳ Ricerca in corso…</span>:"Cerca registrazioni"}
+        </button>
+        <OpenOpusSearch onComposer={setComposer} onWork={setWork} searchKey={searchKey}/>
+        {!apiKey&&<span style={{color:C.amber,fontSize:11}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
+      </div>
       {error&&<p style={{color:C.red,fontSize:11,marginTop:8,marginBottom:0}}>{error}</p>}
     </div>
   );
@@ -545,15 +563,7 @@ function App() {
 
   const handleSaveQobuz=function(rec,url){
     if(!active||!active.recordings)return;
-    var upd={...active,recordings:active.recordings.map(function(r){
-      if(r.rank!==rec.rank||r.interpreter!==rec.interpreter)return r;
-      if((r.qobuz||[]).some(function(q){return q.url===url;}))return r;
-      return {...r,qobuz:[...(r.qobuz||[]),{label:"Ascolta",url:url}]};
-    })};
-    setActive(upd);
-    var lu=libraryRef.current.map(function(e){return e.id===upd.id?upd:e;});
-    saveLibrary(lu);libraryRef.current=lu;setLibrary(lu);
-    window.GH.save(lu,window.GH.tok());
+    var upd={...active,recordings:active.recordings.map(function(r){if(r.rank!==rec.rank||r.interpreter!==rec.interpreter)return r;if((r.qobuz||[]).some(function(q){return q.url===url;}))return r;return {...r,qobuz:[...(r.qobuz||[]),{label:"Ascolta",url:url}]};})};setActive(upd);var lu=libraryRef.current.map(function(e){return e.id===upd.id?upd:e;});saveLibrary(lu);libraryRef.current=lu;setLibrary(lu);window.GH.save(lu,window.GH.tok());
   };
   const handleDelete=id=>{
     const updated=saveLibrary(libraryRef.current.filter(e=>e.id!==id));
@@ -620,8 +630,8 @@ function App() {
 
         {/* Legend */}
         <div style={{display:"flex",gap:14,marginBottom:12,flexWrap:"wrap"}}>
-          {[["🟢 Unanime",C.green],["🟡 Qualche riserva",C.amber],["🔴 Diviso",C.red]].map(([t,col])=>(
-            <span key={t} style={{color:col,fontSize:10}}>{t}</span>
+          {[["🟢 Unanime",C.green],["🟡 Qualche riserva",C.amber],["🔴 Diviso",C.red]].map(([t,c])=>(
+            <span key={t} style={{color:c,fontSize:10}}>{t}</span>
           ))}
           <span style={{color:"#3a3a3a",fontSize:10,marginLeft:"auto"}}>▼ Clicca per espandere</span>
         </div>
