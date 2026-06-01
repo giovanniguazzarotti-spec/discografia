@@ -138,7 +138,7 @@ function SetupScreen({onSave}) {
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
       <div style={{maxWidth:520,width:"100%"}}>
         <div style={{textAlign:"center",marginBottom:32}}>
-          <div style={{color:C.gold,fontSize:10,letterSpacing:3,textTransform:"uppercase",marginBottom:12}}>Critica Discografica Specializzata</div>
+          <div style={{color:C.gold,fontSize:10,letterSpacing:3,textTransform:"uppercase",marginBottom:12}}>Critica Discografica</div>
           <h1 style={{color:C.cream,fontWeight:400,fontSize:26,marginBottom:8}}>Configurazione chiave API</h1>
           <p style={{color:C.mid,fontSize:13,lineHeight:1.7}}>Per usare la ricerca AI inserisci la tua chiave API Anthropic.<br/>Puoi usare l'app anche senza — i dati Bach precaricati sono sempre disponibili.</p>
         </div>
@@ -155,21 +155,7 @@ function SetupScreen({onSave}) {
             <button onClick={()=>onSave("")} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"10px 16px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Salta (solo Bach)</button>
           </div>
         </div>
-        <div style={{background:"#0f1a0f",border:"1px solid #1a3a1a",borderRadius:8,padding:20}}>
-          <div style={{color:C.green,fontSize:11,fontWeight:700,marginBottom:10,letterSpacing:1}}>COME OTTENERE LA CHIAVE</div>
-          {[["1","Vai su","platform.claude.com","https://platform.claude.com"],["2","Crea un account (separato da Claude.ai)","",""],["3","Menu laterale → \"API Keys\" → \"Create Key\"","",""],["4","Aggiungi credito: minimo $5 (≈ 380 ricerche)","",""]].map(([n,t,link,url])=>(
-            <div key={n} style={{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}}>
-              <span style={{background:C.faint,color:C.gold,borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0,marginTop:1}}>{n}</span>
-              <span style={{color:C.mid,fontSize:12,lineHeight:1.5}}>{t} {link&&<a href={url} target="_blank" rel="noreferrer" style={{color:C.gold}}>{link}</a>}</span>
-            </div>
-          ))}
-          <div style={{borderTop:`1px solid #1a3a1a`,marginTop:12,paddingTop:12,color:"#4a6a4a",fontSize:11,lineHeight:1.6}}>
-            💰 Costo per ricerca: ~$0.013 (meno di 2 centesimi)<br/>
-            🔒 La chiave è salvata solo sul tuo dispositivo — mai inviata ad altri
-          </div>
-        </div>
-      </div>
-    </div>
+
   );
 }
 
@@ -415,6 +401,35 @@ function SourcesPanel() {
 }
 
 // ── SEARCH PANEL ──────────────────────────────────────────────────────────────
+function OpenOpusSearch({onComposer,onWork,searchKey}) {
+ const [q,setQ]=React.useState(""); const [res,setRes]=React.useState(null);
+ const [load,setLoad]=React.useState(false); const [view,setView]=React.useState(null);
+ const [pop,setPop]=React.useState([]);
+ const FB=[[87,"Bach"],[145,"Beethoven"],[33,"Brahms"],[196,"Chopin"],[97,"Mozart"],[104,"Schubert"],[159,"Tchaikovsky"],[175,"Vivaldi"]];
+ React.useEffect(function(){setView(null);setRes(null);},[searchKey]);
+ const go=async()=>{if(!q.trim())return;setLoad(true);try{var r=await fetch("https://api.openopus.org/composer/list/search/"+encodeURIComponent(q)+".json");var d=await r.json();setRes((d.composers||[]).map(function(x){return[+x.id,x.complete_name];}));setView("c");}catch(e){}finally{setLoad(false);}};
+ const pop2=async()=>{if(pop.length){setView("p");return;}setLoad(true);try{var r=await fetch("https://api.openopus.org/composer/list/pop.json");var d=await r.json();var p=d.composers&&d.composers.length?d.composers.map(function(x){return[+x.id,x.complete_name];}):FB;setPop(p);setView("p");}catch(e){setPop(FB);setView("p");}finally{setLoad(false);}};
+ const works=async(id,name)=>{onComposer&&onComposer(name);setLoad(true);try{var r=await fetch("https://api.openopus.org/work/list/composer/"+id+"/genre/all.json");var d=await r.json();setRes({n:name,w:d.works||[]});setView("w");}catch(e){setRes({n:name,w:[]});setView("w");}finally{setLoad(false);}};
+ var lst=(view==="c"||view==="p")?(view==="c"?res:pop):null;
+ return(<div style={{marginBottom:14}}>
+ <div style={{display:"flex",gap:6,marginBottom:6}}>
+ <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="Cerca compositore..." style={{flex:1,background:"#0a0806",border:"2px solid #5a5040",color:"#fff",padding:"9px 10px",borderRadius:4,fontSize:13,outline:"none"}}/>
+ <button onClick={pop2} style={{background:"transparent",border:"2px solid #5a5040",color:C.gold,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>{load?"⏳":"☰"}</button>
+ {view&&<button onClick={()=>{setView(null);setRes(null);setQ("");}} style={{background:"transparent",border:"2px solid #5a5040",color:C.muted,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>×</button>}
+ </div>
+ <button onClick={go} disabled={load||!q.trim()} style={{width:"100%",background:q.trim()?C.gold:"#2a2520",color:q.trim()?"#000":"#555",border:"none",borderRadius:4,padding:"8px",fontSize:12,fontWeight:700,cursor:q.trim()?"pointer":"not-allowed",marginBottom:6}}>{load?"...":"🔎 Cerca"}</button>
+ {lst&&lst.length>0&&(<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:6,padding:8,maxHeight:"40vh",overflowY:"auto"}}>
+ {view==="p"&&<div style={{color:C.gold,fontSize:10,marginBottom:6}}>POPOLARI</div>}
+ {lst.map(function(x){return(<div key={x[0]} onClick={function(){works(x[0],x[1]);}} style={{padding:"7px 8px",cursor:"pointer",borderBottom:"1px solid "+C.faint,color:C.cream,fontSize:13}}>{x[1]}</div>);})}
+ </div>)}
+ {view==="w"&&res&&(<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:6,padding:8,maxHeight:"45vh",overflowY:"auto"}}>
+ <div style={{color:C.gold,fontSize:11,fontWeight:700,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
+ <span>{res.n}</span><span style={{color:C.muted,fontSize:10,cursor:"pointer"}} onClick={()=>setView("c")}>←</span>
+ </div>
+ {res.w.map(function(w,i){return(<div key={i} onClick={function(){onWork&&onWork(w.title);}} style={{padding:"5px 0",borderBottom:"1px solid "+C.faint,display:"flex",justifyContent:"space-between",cursor:"pointer"}}><span style={{color:C.cream,fontSize:12}}>{w.title}</span><span style={{color:C.muted,fontSize:10}}>{w.genre}</span></div>);})}
+ </div>)}
+ </div>);
+}
 function SearchPanel({apiKey,onResults,onNeedKey,searchKey}) {
   const [composer,setComposer]=useState("");
   const [work,setWork]=useState("");
@@ -452,10 +467,10 @@ function SearchPanel({apiKey,onResults,onNeedKey,searchKey}) {
           </div>
         ))}
       </div>
-      <div style={{display:"flex",alignItems:"center",gap:12}}>
-        <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#666":"#0f0d09",border:"none",borderRadius:4,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:loading?"not-allowed":"pointer"}}>
+      <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#666":"#0f0d09",border:"none",borderRadius:4,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:loading?"not-allowed":"pointer"}}>
           {loading?<span>⏳ Ricerca in corso…</span>:"Cerca registrazioni"}
         </button>
+        <OpenOpusSearch onComposer={setComposer} onWork={setWork} searchKey={searchKey}/>
         {!apiKey&&<span style={{color:C.amber,fontSize:11}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
       </div>
       {error&&<p style={{color:C.red,fontSize:11,marginTop:8,marginBottom:0}}>{error}</p>}
@@ -468,6 +483,7 @@ function App() {
   const [apiKey,setApiKey]=useState(null);
   const [showSetup,setShowSetup]=useState(false);
   const [ghTok,setGhTok]=useState("");
+  const [searchKey,setSearchKey]=useState(0);
   const [searchKey,setSearchKey]=useState(0);
   const [library,setLibrary]=useState([]);
   const [active,setActive]=useState(null);
@@ -504,7 +520,7 @@ function App() {
         };
       }),
     };
-    setActive(entry);setExpanded(null);setSearchKey(function(k){return k+1;});
+    setActive(entry);setExpanded(null);setSearchKey(function(k){return k+1;});setSearchKey(function(k){return k+1;});
     // Use ref to always have current library value, avoiding stale closure
     const updated=saveLibrary([...libraryRef.current,entry]);
     libraryRef.current=updated;
@@ -541,7 +557,7 @@ function App() {
           <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
             <div style={{flex:1,minWidth:0}}>
               <div style={{color:C.gold,fontSize:8,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Guida alle Registrazioni · Musica Classica</div>
-              <h1 style={{margin:0,fontSize:17,fontWeight:400,color:C.cream,lineHeight:1.2}}>Critica Discografica Specializzata</h1>
+              <h1 style={{margin:0,fontSize:17,fontWeight:400,color:C.cream,lineHeight:1.2}}>Critica Discografica</h1>
               <p style={{color:C.muted,fontSize:9,margin:"4px 0 0",lineHeight:1.5}}>Gramophone · BBC Music · ClassicsToday · The Guardian · Limelight</p>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end",flexShrink:0}}>
@@ -599,7 +615,7 @@ function App() {
 
         </div>}
         <div style={{borderTop:`1px solid ${C.bg3}`,marginTop:36,paddingTop:12,color:C.faint,fontSize:10}}>
-          Critica Discografica Specializzata · Maggio 2026 · Biblioteca salvata in questo browser · {library.length}/200 guide
+          Critica Discografica · Maggio 2026 · Salvata nel browser · {library.length}/200 guide
         </div>
       </div>
 
