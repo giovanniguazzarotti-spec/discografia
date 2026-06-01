@@ -217,12 +217,7 @@ function Card({rec,expanded,onToggle,work,onSave}) {
             <span style={{color:cc,fontSize:11}}>{rec.consensusIcon} {rec.consensus}</span>
           </div>
           <div style={{color:C.muted,fontSize:11,marginTop:2}}>{rec.label} · {rec.year} · {rec.books}</div>
-          {(rec.albumTitle||rec.digitalEdition)&&<div
-            onClick={e=>{e.stopPropagation();var txt=[rec.albumTitle,rec.interpreter,rec.year,rec.label,rec.digitalEdition].filter(Boolean).join(" · ");navigator.clipboard?navigator.clipboard.writeText(txt):window.prompt("Copia:",txt);}}
-            title="Tocca per copiare"
-            style={{color:C.faint,fontSize:10,marginTop:2,cursor:"pointer",fontFamily:"monospace",borderBottom:"1px dotted "+C.faint,display:"inline-block"}}>
-            {[rec.albumTitle,rec.year,rec.label,rec.digitalEdition].filter(Boolean).join(" · ")} 📋
-          </div>}
+
         </div>
         <div style={{display:"flex",gap:14}}>
           {[["Esec.",rec.execStars],["Reg.",rec.recStars]].map(([l,n])=>(
@@ -248,14 +243,19 @@ function Card({rec,expanded,onToggle,work,onSave}) {
             <div style={{color:C.muted,fontSize:9,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>📰 Critica</div>
             <p style={{color:C.mid,fontSize:11,margin:0,lineHeight:1.65}}>{rec.criticalNote}</p>
           </div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
-            <button onClick={e=>{e.stopPropagation();window.open("https://open.qobuz.com","_blank");}} style={{background:"#1a3a2a",border:"1px solid #4a9a6a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📱 Qobuz</button>
+          {(rec.reviews||[]).length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:8}}>
+            {(rec.reviews||[]).map((r,i)=>(<button key={i} onClick={e=>{e.stopPropagation();window.open(r.url,"_blank");}} style={{background:"#1a1f3a",border:"1px solid #4a5a9a",color:"#7a9acf",padding:"4px 10px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📰 {r.label}</button>))}
+          </div>}
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10,alignItems:"center"}}>
+            <button onClick={e=>{e.stopPropagation();window.open("qobuz://","_blank");setTimeout(function(){window.open("https://open.qobuz.com","_blank");},300);}} style={{background:"#1a3a2a",border:"1px solid #4a9a6a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📱 Qobuz</button>
             {(rec.qobuz||[]).slice(0,1).filter(q=>q.url&&toOpenQobuz(q.url)).map((q,i)=>(
               <button key={i} onClick={e=>{e.stopPropagation();window.open(toOpenQobuz(q.url),"_blank");}} style={{background:"#0e2a1a",border:"1px solid #3a8a50",color:"#4acf7a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>🎵 Ascolta</button>
             ))}
             {onSave&&<span onClick={e=>e.stopPropagation()} style={{display:"inline-flex",gap:4,alignItems:"center"}}><input id={"qu-"+rec.rank} placeholder="URL Qobuz..." style={{background:"#0a0806",border:"1px solid #4a8a4a",color:"#f0ead6",padding:"4px 7px",borderRadius:4,fontSize:10,outline:"none",width:150}}/><button onClick={e=>{e.stopPropagation();var inp=document.getElementById("qu-"+rec.rank);if(!inp)return;var raw=inp.value.trim();var m=raw.match(/https:\/\/open\.qobuz\.com\/album\/\w+/);var url=m?m[0]:(raw.startsWith("http")?raw:"");if(url){onSave(rec,url);inp.value=""}}} style={{background:"#1a3a1a",border:"1px solid #4a8a4a",color:"#7acf9a",padding:"4px 7px",borderRadius:4,fontSize:10,cursor:"pointer"}}>💾</button></span>}
-            {(rec.reviews||[]).map((r,i)=>(<button key={i} onClick={e=>{e.stopPropagation();window.open(r.url,"_blank");}} style={{background:"#1a1f3a",border:"1px solid #4a5a9a",color:"#7a9acf",padding:"4px 10px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📰 {r.label}</button>))}
           </div>
+          {(rec.albumTitle||rec.digitalEdition)&&<div onClick={e=>{e.stopPropagation();var txt=[rec.albumTitle,rec.interpreter,rec.year,rec.label,rec.digitalEdition].filter(Boolean).join(" · ");navigator.clipboard?navigator.clipboard.writeText(txt):window.prompt("Copia:",txt);}} style={{marginTop:8,padding:"6px 10px",background:"#0f1a2a",border:"1px solid #2a4a6a",borderRadius:4,color:"#8ab4d4",fontSize:10,cursor:"pointer",fontFamily:"monospace",display:"inline-block"}}>
+            {[rec.albumTitle,rec.interpreter,rec.year,rec.label,rec.digitalEdition].filter(Boolean).join(" · ")} 📋
+          </div>}
         </div>
       )}
     </div>
