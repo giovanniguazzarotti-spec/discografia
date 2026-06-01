@@ -496,7 +496,6 @@ function SearchPanel({apiKey,onResults,onNeedKey,searchKey}) {
         </button>
         <OpenOpusSearch onComposer={setComposer} onWork={setWork} searchKey={searchKey}/>
         {!apiKey&&<span style={{color:C.amber,fontSize:11}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
-      </div>
       {error&&<p style={{color:C.red,fontSize:11,marginTop:8,marginBottom:0}}>{error}</p>}
     </div>
   );
