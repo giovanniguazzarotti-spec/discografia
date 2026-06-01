@@ -253,8 +253,8 @@ function Card({rec,expanded,onToggle,work,onSave}) {
             ))}
             {onSave&&<span onClick={e=>e.stopPropagation()} style={{display:"inline-flex",gap:4,alignItems:"center"}}><input id={"qu-"+rec.rank} placeholder="URL Qobuz..." style={{background:"#0a0806",border:"1px solid #4a8a4a",color:"#f0ead6",padding:"4px 7px",borderRadius:4,fontSize:10,outline:"none",width:150}}/><button onClick={e=>{e.stopPropagation();var inp=document.getElementById("qu-"+rec.rank);if(!inp)return;var raw=inp.value.trim();var m=raw.match(/https:\/\/open\.qobuz\.com\/album\/\w+/);var url=m?m[0]:(raw.startsWith("http")?raw:"");if(url){onSave(rec,url);inp.value=""}}} style={{background:"#1a3a1a",border:"1px solid #4a8a4a",color:"#7acf9a",padding:"4px 7px",borderRadius:4,fontSize:10,cursor:"pointer"}}>💾</button></span>}
           </div>
-          {(rec.albumTitle||rec.digitalEdition)&&<div onClick={e=>{e.stopPropagation();var txt=[rec.albumTitle,rec.interpreter,rec.year,rec.label,rec.digitalEdition].filter(Boolean).join(" · ");navigator.clipboard?navigator.clipboard.writeText(txt):window.prompt("Copia:",txt);}} style={{marginTop:8,padding:"6px 10px",background:"#0f1a2a",border:"1px solid #2a4a6a",borderRadius:4,color:"#8ab4d4",fontSize:10,cursor:"pointer",fontFamily:"monospace",display:"inline-block"}}>
-            {[rec.albumTitle,rec.interpreter,rec.year,rec.label,rec.digitalEdition].filter(Boolean).join(" · ")} 📋
+          {(rec.albumTitle||rec.digitalEdition)&&<div onClick={e=>{e.stopPropagation();var txt=[rec.interpreter,rec.albumTitle].filter(Boolean).join(" ");navigator.clipboard?navigator.clipboard.writeText(txt):window.prompt("Copia:",txt);}} style={{marginTop:8,padding:"6px 10px",background:"#0f1a2a",border:"1px solid #2a4a6a",borderRadius:4,color:"#8ab4d4",fontSize:10,cursor:"pointer",fontFamily:"monospace",display:"inline-block"}}>
+            {[rec.interpreter,rec.albumTitle].filter(Boolean).join(" ")} 📋
           </div>}
         </div>
       )}
