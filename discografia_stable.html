@@ -247,7 +247,7 @@ function Card({rec,expanded,onToggle,work,onSave}) {
             {(rec.reviews||[]).map((r,i)=>(<button key={i} onClick={e=>{e.stopPropagation();window.open(r.url,"_blank");}} style={{background:"#1a1f3a",border:"1px solid #4a5a9a",color:"#7a9acf",padding:"4px 10px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📰 {r.label}</button>))}
           </div>}
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10,alignItems:"center"}}>
-            <button onClick={e=>{e.stopPropagation();(function(){var f=document.createElement("iframe");f.src="qobuz://";f.style.display="none";document.body.appendChild(f);setTimeout(function(){document.body.removeChild(f);},1000);})();}} style={{background:"#1a3a2a",border:"1px solid #4a9a6a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📱 Qobuz</button>
+            <button onClick={e=>{e.stopPropagation();window.location.href="https://open.qobuz.com";}} style={{background:"#1a3a2a",border:"1px solid #4a9a6a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📱 Qobuz</button>
             {(rec.qobuz||[]).slice(0,1).filter(q=>q.url&&toOpenQobuz(q.url)).map((q,i)=>(
               <button key={i} onClick={e=>{e.stopPropagation();window.open(toOpenQobuz(q.url),"_blank");}} style={{background:"#0e2a1a",border:"1px solid #3a8a50",color:"#4acf7a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>🎵 Ascolta</button>
             ))}
