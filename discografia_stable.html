@@ -5,126 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Critica Discografica Classica</title>
 <script>
-function generatePDF(entry){if(!entry)return;var lines=["CRITICA DISCOGRAFICA SPECIALIZZATA",""];lines.push((entry.work||"").toUpperCase());if(entry.instrument)lines.push("Strumento: "+entry.instrument);lines.push("");if(entry.summary){lines.push(entry.summary);lines.push("");}(entry.recordings||[]).forEach(function(rec){lines.push("---");lines.push("#"+rec.rank+" "+rec.interpreter+" "+rec.consensusIcon);lines.push(rec.label+" "+rec.year);if(rec.execNote)lines.push(rec.execNote);if(rec.recNote)lines.push(rec.recNote);if(rec.criticalNote)lines.push(rec.criticalNote);(rec.qobuz||[]).forEach(function(q){if(q.url)lines.push("Qobuz: "+q.url);});lines.push("");});if(entry.recommendation)lines.push("Consiglio: "+entry.recommendation);var txt=lines.join("\n");var el=document.createElement("textarea");el.value=txt;el.style.cssText="position:fixed;opacity:0";document.body.appendChild(el);el.select();try{document.execCommand("copy");}catch(ex){}document.body.removeChild(el);alert("Testo copiato!");}
-
-// ── OPEN OPUS SEARCH (vanilla JS, fuori Babel) ────────────────────────────────
-(function(){
- var FALLBACK=[[87,"Bach"],[145,"Beethoven"],[33,"Brahms"],[196,"Chopin"],[56,"Debussy"],[43,"Dvořák"],[49,"Handel"],[53,"Haydn"],[60,"Liszt"],[64,"Mahler"],[97,"Mozart"],[107,"Prokofiev"],[110,"Rachmaninoff"],[104,"Schubert"],[129,"Schumann"],[159,"Tchaikovsky"],[175,"Vivaldi"],[181,"Wagner"]];
- var popular=[];
- var S={color:{gold:"#c9a84c",cream:"#f0ead6",muted:"#6a5a3a",bg2:"#1a1408",border:"#2a2010",faint:"#1a1208"}};
- 
- function render(){
-  var root=document.getElementById("oo-root");
-  if(!root)return;
-  root.innerHTML='<div style="margin-bottom:14px"><div style="display:flex;gap:6px;margin-bottom:6px"><input id="oo-q" placeholder="Cerca compositore..." style="flex:1;background:#0a0806;border:2px solid #5a5040;color:#fff;padding:9px 10px;border-radius:4px;font-size:13px;outline:none"/><button id="oo-pop" style="background:transparent;border:2px solid #5a5040;color:'+S.color.gold+';padding:9px 10px;border-radius:4px;font-size:12px;cursor:pointer">☰</button><button id="oo-close" style="display:none;background:transparent;border:2px solid #5a5040;color:'+S.color.muted+';padding:9px 10px;border-radius:4px;font-size:12px;cursor:pointer">×</button></div><button id="oo-search" style="width:100%;background:#2a2520;color:#555;border:none;border-radius:4px;padding:8px;font-size:12px;font-weight:700;cursor:not-allowed;margin-bottom:6px">🔎 Cerca</button><div id="oo-list"></div></div>';
-  setupEvents();
- }
- 
- function setupEvents(){
-  var q=document.getElementById("oo-q");
-  var sb=document.getElementById("oo-search");
-  var pb=document.getElementById("oo-pop");
-  var cb=document.getElementById("oo-close");
-  if(!q)return;
-  
-  q.oninput=function(){
-   sb.style.background=q.value.trim()?"#c9a84c":"#2a2520";
-   sb.style.color=q.value.trim()?"#000":"#555";
-   sb.style.cursor=q.value.trim()?"pointer":"not-allowed";
-  };
-  q.onkeydown=function(e){if(e.key==="Enter")doSearch();};
-  sb.onclick=doSearch;
-  pb.onclick=loadPop;
-  cb.onclick=function(){closeList();};
- }
- 
- function closeList(){
-  var l=document.getElementById("oo-list");if(l)l.innerHTML="";
-  var cb=document.getElementById("oo-close");if(cb)cb.style.display="none";
- }
- 
- function showList(items,isWorks,name){
-  var l=document.getElementById("oo-list");
-  var cb=document.getElementById("oo-close");
-  if(!l)return;
-  if(cb)cb.style.display="inline-block";
-  var html='<div style="background:'+S.color.bg2+';border:1px solid '+S.color.border+';border-radius:6px;padding:8px;max-height:40vh;overflow-y:auto">';
-  if(isWorks){
-   html+='<div style="color:'+S.color.gold+';font-size:11px;font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between"><span>'+name+'</span><span id="oo-back" style="color:'+S.color.muted+';font-size:10px;cursor:pointer">←</span></div>';
-   items.forEach(function(w,i){
-    html+='<div data-title="'+encodeURIComponent(w.title)+'" style="padding:5px 0;border-bottom:1px solid '+S.color.faint+';display:flex;justify-content:space-between;cursor:pointer"><span style="color:'+S.color.cream+';font-size:12px">'+w.title+'</span><span style="color:'+S.color.muted+';font-size:10px">'+w.genre+'</span></div>';
-   });
-  } else {
-   items.forEach(function(comp){
-    html+='<div data-id="'+(comp[0]||comp.id)+'" data-name="'+encodeURIComponent(comp[1]||comp.complete_name)+'" style="padding:7px 8px;cursor:pointer;border-bottom:1px solid '+S.color.faint+';display:flex;justify-content:space-between"><span style="color:'+S.color.cream+';font-size:13px">'+(comp[1]||comp.complete_name)+'</span></div>';
-   });
-  }
-  html+='</div>';
-  l.innerHTML=html;
-  
-  // eventi
-  if(isWorks){
-   var back=document.getElementById("oo-back");
-   if(back)back.onclick=function(){loadPop();};
-   l.querySelectorAll('[data-title]').forEach(function(el){
-    el.onclick=function(){
-     var title=decodeURIComponent(el.getAttribute("data-title"));
-     document.dispatchEvent(new CustomEvent("oo-work",{detail:title}));
-     closeList();
-    };
-   });
-  } else {
-   l.querySelectorAll('[data-id]').forEach(function(el){
-    el.onclick=function(){
-     var id=el.getAttribute("data-id");
-     var name=decodeURIComponent(el.getAttribute("data-name"));
-     document.dispatchEvent(new CustomEvent("oo-composer",{detail:name}));
-     loadWorks(id,name);
-    };
-   });
-  }
- }
- 
- function doSearch(){
-  var q=document.getElementById("oo-q");
-  if(!q||!q.value.trim())return;
-  fetch("https://api.openopus.org/composer/list/search/"+encodeURIComponent(q.value.trim())+".json")
-   .then(function(r){return r.json();})
-   .then(function(d){showList(d.composers||[],"",null);})
-   .catch(function(){});
- }
- 
- function loadPop(){
-  if(popular.length){showList(popular,false,null);return;}
-  fetch("https://api.openopus.org/composer/list/pop.json")
-   .then(function(r){return r.json();})
-   .then(function(d){popular=d.composers&&d.composers.length?d.composers:FALLBACK;showList(popular,false,null);})
-   .catch(function(){popular=FALLBACK;showList(popular,false,null);});
- }
- 
- function loadWorks(id,name){
-  fetch("https://api.openopus.org/work/list/composer/"+id+"/genre/all.json")
-   .then(function(r){return r.json();})
-   .then(function(d){showList(d.works||[],true,name);})
-   .catch(function(){showList([],true,name);});
- }
- 
- // Inizializza quando DOM è pronto
- document.addEventListener("DOMContentLoaded",function(){
-  // Riprova finché il div non esiste (React lo crea dopo)
-  var tries=0;
-  var t=setInterval(function(){
-   if(document.getElementById("oo-root")||tries>20){
-    clearInterval(t);render();
-   }
-   tries++;
-  },200);
- });
- 
- // Chiudi lista quando parte una ricerca
- document.addEventListener("oo-search-start",closeList);
-})();
-
 window.GH={LS:"cdc_gh_v1",tok:function(){try{return localStorage.getItem(this.LS)||"";}catch{return "";}},save:function(t){try{localStorage.setItem(this.LS,t);}catch{}}};
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -275,7 +155,21 @@ function SetupScreen({onSave}) {
             <button onClick={()=>onSave("")} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"10px 16px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Salta (solo Bach)</button>
           </div>
         </div>
-
+        <div style={{background:"#0f1a0f",border:"1px solid #1a3a1a",borderRadius:8,padding:20}}>
+          <div style={{color:C.green,fontSize:11,fontWeight:700,marginBottom:10,letterSpacing:1}}>COME OTTENERE LA CHIAVE</div>
+          {[["1","Vai su","platform.claude.com","https://platform.claude.com"],["2","Crea un account (separato da Claude.ai)","",""],["3","Menu laterale → \"API Keys\" → \"Create Key\"","",""],["4","Aggiungi credito: minimo $5 (≈ 380 ricerche)","",""]].map(([n,t,link,url])=>(
+            <div key={n} style={{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}}>
+              <span style={{background:C.faint,color:C.gold,borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0,marginTop:1}}>{n}</span>
+              <span style={{color:C.mid,fontSize:12,lineHeight:1.5}}>{t} {link&&<a href={url} target="_blank" rel="noreferrer" style={{color:C.gold}}>{link}</a>}</span>
+            </div>
+          ))}
+          <div style={{borderTop:`1px solid #1a3a1a`,marginTop:12,paddingTop:12,color:"#4a6a4a",fontSize:11,lineHeight:1.6}}>
+            💰 Costo per ricerca: ~$0.013 (meno di 2 centesimi)<br/>
+            🔒 La chiave è salvata solo sul tuo dispositivo — mai inviata ad altri
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -325,11 +219,22 @@ function Card({rec,expanded,onToggle,work}) {
             <p style={{color:C.mid,fontSize:11,margin:0,lineHeight:1.65}}>{rec.criticalNote}</p>
           </div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
-            <button onClick={e=>{e.stopPropagation();window.open("https://open.qobuz.com","_blank");}} style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📱 Qobuz</button>
-            {(rec.qobuz||[]).filter(q=>q.url&&toOpenQobuz(q.url)).slice(0,1).map((q,i)=>(
-              <button key={i} onClick={e=>{e.stopPropagation();window.open(toOpenQobuz(q.url),"_blank");}} style={{background:"#0e2a1a",border:"1px solid #1a5a30",color:"#4acf7a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>🎵 Ascolta</button>
+            {(rec.qobuz||[]).filter(q=>q.url).map((q,i)=>{
+              const appUrl=toOpenQobuz(q.url);
+              return <button key={i}
+                onClick={e=>{e.stopPropagation();e.preventDefault();window.open(appUrl,"_blank","noopener,noreferrer");}}
+                title="Apre nell'app Qobuz"
+                style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",display:"inline-flex",alignItems:"center",gap:5,cursor:"pointer"}}>
+                🎵 {q.label}<span style={{background:"#0e2a1a",border:"1px solid #1a5a30",borderRadius:3,padding:"1px 5px",fontSize:9,color:"#4acf7a"}}>apri app</span>
+              </button>;
+            })}
+            {(rec.reviews||[]).map((r,i)=>(
+              <button key={i}
+                onClick={e=>{e.stopPropagation();e.preventDefault();window.open(r.url,"_blank","noopener,noreferrer");}}
+                style={{background:"#1a1f3a",border:"1px solid #2a3a6a",color:"#7a9acf",padding:"4px 10px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>
+                📰 {r.label}
+              </button>
             ))}
-            {(rec.reviews||[]).map((r,i)=>(<button key={i} onClick={e=>{e.stopPropagation();window.open(r.url,"_blank");}} style={{background:"#1a1f3a",border:"1px solid #2a3a6a",color:"#7a9acf",padding:"4px 10px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📰 {r.label}</button>))}
           </div>
         </div>
       )}
@@ -526,22 +431,15 @@ function SearchPanel({apiKey,onResults,onNeedKey,searchKey}) {
   const [instrument,setInstrument]=useState("");
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState(null);
-  useEffect(()=>{
-    const hc=e=>setComposer(e.detail);
-    const hw=e=>setWork(e.detail);
-    document.addEventListener("oo-composer",hc);
-    document.addEventListener("oo-work",hw);
-    return()=>{document.removeEventListener("oo-composer",hc);document.removeEventListener("oo-work",hw);};
-  },[]);
 
   const search=async()=>{
     if(!composer.trim()&&!work.trim())return;
     if(!apiKey){onNeedKey();return;}
-    setLoading(true);setError(null);document.dispatchEvent(new CustomEvent("oo-search-start"));
-    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless: Gramophone, BBC, ClassicsToday, Guardian, Classic Review. albumTitle, digitalEdition, reviewUrls con URL reali, qobuzUrl se noto.\nJSON: {\"work\":\"x\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"albumTitle\":\"x\",\"digitalEdition\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null,\"reviewUrls\":[{\"label\":\"Gramophone\",\"url\":\"https://...\"}]}]}";
+    setLoading(true);setError(null);
+    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless: Gramophone, BBC, ClassicsToday, Guardian. qobuzUrl se noto.\nJSON: {\"work\":\"x\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null}]}";
     try{
       var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:4000,messages:[{role:"user",content:p}]})});
-      if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit — aspetta 1 min.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
+      if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
       var d=await r.json();var t=(d.content||[]).map(function(b){return b.text||"";}).join("");
       var cl=t.replace(/```json|```/g,"").trim();var a=cl.indexOf("{"),b=cl.lastIndexOf("}");
       if(a<0||b<0)throw new Error("Formato non valido.");
@@ -564,10 +462,10 @@ function SearchPanel({apiKey,onResults,onNeedKey,searchKey}) {
           </div>
         ))}
       </div>
-      <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#666":"#0f0d09",border:"none",borderRadius:4,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:loading?"not-allowed":"pointer"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#666":"#0f0d09",border:"none",borderRadius:4,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:loading?"not-allowed":"pointer"}}>
           {loading?<span>⏳ Ricerca in corso…</span>:"Cerca registrazioni"}
         </button>
-        <div id="oo-root"></div>
         {!apiKey&&<span style={{color:C.amber,fontSize:11}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
       </div>
       {error&&<p style={{color:C.red,fontSize:11,marginTop:8,marginBottom:0}}>{error}</p>}
