@@ -138,7 +138,7 @@ function SetupScreen({onSave}) {
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
       <div style={{maxWidth:520,width:"100%"}}>
         <div style={{textAlign:"center",marginBottom:32}}>
-          <div style={{color:C.gold,fontSize:10,letterSpacing:3,textTransform:"uppercase",marginBottom:12}}>Critica Discografica</div>
+          <div style={{color:C.gold,fontSize:10,letterSpacing:3,textTransform:"uppercase",marginBottom:12}}>Critica Discografica Specializzata</div>
           <h1 style={{color:C.cream,fontWeight:400,fontSize:26,marginBottom:8}}>Configurazione chiave API</h1>
           <p style={{color:C.mid,fontSize:13,lineHeight:1.7}}>Per usare la ricerca AI inserisci la tua chiave API Anthropic.<br/>Puoi usare l'app anche senza — i dati Bach precaricati sono sempre disponibili.</p>
         </div>
@@ -155,7 +155,21 @@ function SetupScreen({onSave}) {
             <button onClick={()=>onSave("")} style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"10px 16px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Salta (solo Bach)</button>
           </div>
         </div>
-
+        <div style={{background:"#0f1a0f",border:"1px solid #1a3a1a",borderRadius:8,padding:20}}>
+          <div style={{color:C.green,fontSize:11,fontWeight:700,marginBottom:10,letterSpacing:1}}>COME OTTENERE LA CHIAVE</div>
+          {[["1","Vai su","platform.claude.com","https://platform.claude.com"],["2","Crea un account (separato da Claude.ai)","",""],["3","Menu laterale → \"API Keys\" → \"Create Key\"","",""],["4","Aggiungi credito: minimo $5 (≈ 380 ricerche)","",""]].map(([n,t,link,url])=>(
+            <div key={n} style={{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}}>
+              <span style={{background:C.faint,color:C.gold,borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0,marginTop:1}}>{n}</span>
+              <span style={{color:C.mid,fontSize:12,lineHeight:1.5}}>{t} {link&&<a href={url} target="_blank" rel="noreferrer" style={{color:C.gold}}>{link}</a>}</span>
+            </div>
+          ))}
+          <div style={{borderTop:`1px solid #1a3a1a`,marginTop:12,paddingTop:12,color:"#4a6a4a",fontSize:11,lineHeight:1.6}}>
+            💰 Costo per ricerca: ~$0.013 (meno di 2 centesimi)<br/>
+            🔒 La chiave è salvata solo sul tuo dispositivo — mai inviata ad altri
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -165,7 +179,7 @@ function Stars({n,size=12}) {
 }
 
 // ── RECORDING CARD ────────────────────────────────────────────────────────────
-function Card({rec,expanded,onToggle,work,onSave}) {
+function Card({rec,expanded,onToggle,work}) {
   const lvlBg={A:C.cardA,B:C.cardB,C:C.cardC}[rec.level]||C.bg2;
   const cc=rec.consensusIcon==="🟢"?C.green:rec.consensusIcon==="🔴"?C.red:C.amber;
   return (
@@ -205,12 +219,22 @@ function Card({rec,expanded,onToggle,work,onSave}) {
             <p style={{color:C.mid,fontSize:11,margin:0,lineHeight:1.65}}>{rec.criticalNote}</p>
           </div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
-            <button onClick={e=>{e.stopPropagation();window.open("https://open.qobuz.com","_blank");}} style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📱 Qobuz</button>
-            {(rec.qobuz||[]).filter(q=>q.url&&toOpenQobuz(q.url)).slice(0,1).map((q,i)=>(
-              <button key={i} onClick={e=>{e.stopPropagation();window.open(toOpenQobuz(q.url),"_blank");}} style={{background:"#0e2a1a",border:"1px solid #1a5a30",color:"#4acf7a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>🎵 Ascolta</button>
+            {(rec.qobuz||[]).filter(q=>q.url).map((q,i)=>{
+              const appUrl=toOpenQobuz(q.url);
+              return <button key={i}
+                onClick={e=>{e.stopPropagation();e.preventDefault();window.open(appUrl,"_blank","noopener,noreferrer");}}
+                title="Apre nell'app Qobuz"
+                style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,fontFamily:"monospace",display:"inline-flex",alignItems:"center",gap:5,cursor:"pointer"}}>
+                🎵 {q.label}<span style={{background:"#0e2a1a",border:"1px solid #1a5a30",borderRadius:3,padding:"1px 5px",fontSize:9,color:"#4acf7a"}}>apri app</span>
+              </button>;
+            })}
+            {(rec.reviews||[]).map((r,i)=>(
+              <button key={i}
+                onClick={e=>{e.stopPropagation();e.preventDefault();window.open(r.url,"_blank","noopener,noreferrer");}}
+                style={{background:"#1a1f3a",border:"1px solid #2a3a6a",color:"#7a9acf",padding:"4px 10px",borderRadius:4,fontSize:10,fontFamily:"monospace",cursor:"pointer"}}>
+                📰 {r.label}
+              </button>
             ))}
-            {onSave&&<span onClick={e=>e.stopPropagation()} style={{display:"inline-flex",gap:4,alignItems:"center"}}><input id={"qu-"+rec.rank} placeholder="URL Qobuz..." style={{background:"#0a0806",border:"1px solid #2a5a2a",color:"#f0ead6",padding:"4px 7px",borderRadius:4,fontSize:10,outline:"none",width:150}}/><button onClick={e=>{e.stopPropagation();var inp=document.getElementById("qu-"+rec.rank);if(!inp)return;var raw=inp.value.trim();var m=raw.match(/https:\/\/open\.qobuz\.com\/album\/\w+/);var url=m?m[0]:(raw.startsWith("http")?raw:"");if(url){onSave(rec,url);inp.value=""}}} style={{background:"#1a3a1a",border:"1px solid #2a5a2a",color:"#7acf9a",padding:"4px 7px",borderRadius:4,fontSize:10,cursor:"pointer"}}>💾</button></span>}
-            {(rec.reviews||[]).map((r,i)=>(<button key={i} onClick={e=>{e.stopPropagation();window.open(r.url,"_blank");}} style={{background:"#1a1f3a",border:"1px solid #2a3a6a",color:"#7a9acf",padding:"4px 10px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📰 {r.label}</button>))}
           </div>
         </div>
       )}
@@ -220,153 +244,162 @@ function Card({rec,expanded,onToggle,work,onSave}) {
 
 // ── LIBRARY MODAL ─────────────────────────────────────────────────────────────
 function LibraryModal({library, activeId, onSelect, onDelete, onClose, onExport}) {
- const [search,setSearch]=useState("");
- const [sortBy,setSortBy]=useState("d");
- const [showExport,setShowExport]=useState(false);
- const [pdfEntry,setPdfEntry]=useState(null);
- const [confirmId,setConfirmId]=useState(null);
- const allEntries = useMemo(()=>{
- const withBuiltin=[{...BUILTIN,_builtin:true},...library];
- let filtered = search.trim()
- ? withBuiltin.filter(e=>(e.work||"").toLowerCase().includes(search.toLowerCase())||(e.instrument||"").toLowerCase().includes(search.toLowerCase()))
- : withBuiltin;
- if(sortBy==="t") filtered=[...filtered].sort((a,b)=>(a.work||"").localeCompare(b.work||""));
- return filtered;
- },[library,search,sortBy]);
- const avgStars = e => {
- const recs=e.recordings||[];
- if(!recs.length) return 0;
- return Math.round((recs.reduce((s,r)=>s+(r.execStars||0)+(r.recStars||0),0))/(recs.length*2));
- };
- return (
- <div style={{position:"fixed",inset:0,background:"#000000aa",zIndex:2000,display:"flex",alignItems:"stretch",justifyContent:"flex-end"}} onClick={onClose}>
- <div style={{width:520,maxWidth:"95vw",background:C.bg2,display:"flex",flexDirection:"column",borderLeft:`1px solid ${C.border}`,boxShadow:"-8px 0 40px #000000aa"}} onClick={e=>e.stopPropagation()}>
- {/* Header */}
- <div style={{padding:"18px 20px 14px",borderBottom:`1px solid ${C.border}`}}>
- <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
- <div>
- <span style={{color:C.gold,fontSize:13,letterSpacing:2,textTransform:"uppercase",fontFamily:"Georgia"}}>📚 Biblioteca</span>
- <span style={{color:C.muted,fontSize:11,marginLeft:10}}>{library.length} guide salvate</span>
- </div>
- <button onClick={onClose} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0,lineHeight:1}}>×</button>
- </div>
- {/* Search */}
- <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cerca per compositore o strumento…"
- style={{width:"100%",background:C.bg,border:`1px solid ${C.faint}`,color:C.cream,padding:"8px 11px",borderRadius:4,fontSize:12,outline:"none",marginBottom:10}}/>
- <div style={{display:"flex",gap:4}}>
- {[["Data","d"],["Titolo","t"]].map(([l,v])=>(
- <button key={v} onClick={()=>setSortBy(v)} style={{background:sortBy===v?C.faint:"transparent",border:`1px solid ${C.faint}`,color:sortBy===v?C.gold:C.muted,padding:"4px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>↕ {l}</button>
- ))}
- </div>
- </div>
- {/* Guide list */}
- <div style={{flex:1,overflowY:"auto",padding:"10px 12px"}}>
- {allEntries.length===0&&<div style={{color:C.muted,fontSize:12,padding:"30px",textAlign:"center",lineHeight:1.8}}>
- {search?"Nessuna guida trovata.":"Nessuna guida salvata ancora.\nLe ricerche appariranno qui automaticamente."}
- </div>}
- {allEntries.map((e,i)=>{
- const isActive=activeId===e.id;
- const isBuiltin=e._builtin;
- // Index counts only real searches (excluding builtin)
- const searchIdx = isBuiltin ? 1 : allEntries.slice(0,i).filter(x=>!x._builtin).length + 2;
- return (
- <div key={e.id||i} onClick={()=>{onSelect(e);onClose();}}
- style={{background:isActive?C.bg3:C.bg,border:`1px solid ${isActive?C.gold+"66":C.border}`,borderRadius:6,padding:"12px 14px",marginBottom:8,cursor:"pointer",position:"relative",transition:"border-color 0.15s"}}>
- <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
- {/* Index + count */}
- <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0,alignItems:"center"}}>
- <div style={{background:"#1a1408",border:`1px solid ${C.gold}55`,borderRadius:4,padding:"4px 8px",textAlign:"center",minWidth:36}}>
- <div style={{color:C.goldDim,fontSize:8,letterSpacing:0.5}}>#</div>
- <div style={{color:C.gold,fontSize:15,fontWeight:700,fontFamily:"Georgia"}}>{searchIdx}</div>
- </div>
- <div style={{background:"#0f1a14",border:"1px solid #2a4a30",borderRadius:4,padding:"4px 8px",textAlign:"center",minWidth:36}}>
- <div style={{color:C.green,fontSize:14,fontWeight:700,fontFamily:"monospace"}}>{(e.recordings||[]).length}</div>
- <div style={{color:"#4a7a5a",fontSize:8,letterSpacing:0.5}}>rec.</div>
- </div>
- </div>
- <div style={{flex:1,minWidth:0}}>
- <div style={{color:C.cream,fontSize:13,fontFamily:"Georgia",lineHeight:1.3,paddingRight:isBuiltin?0:22}}>{e.work}</div>
- <div style={{display:"flex",gap:8,marginTop:5,flexWrap:"wrap",alignItems:"center"}}>
- {e.instrument&&<span style={{color:C.muted,fontSize:10,background:C.faint,padding:"1px 7px",borderRadius:10}}>{e.instrument}</span>}
- <span style={{color:C.muted,fontSize:10}}>{e.savedAt}</span>
- <span style={{color:C.muted,fontSize:10}}>{(e.recordings||[]).length} registrazioni</span>
- <Stars n={avgStars(e)} size={10}/>
- </div>
- {/* Mini recording list */}
- {(e.recordings||[]).slice(0,3).map((r,ri)=>(
- <div key={ri} style={{color:C.muted,fontSize:10,marginTop:3,display:"flex",alignItems:"center",gap:5}}>
- <span style={{color:{A:C.green,B:C.amber,C:C.red}[r.level]||C.muted,fontSize:9}}>{r.level}</span>
- <span style={{color:C.mid}}>{r.interpreter}</span>
- <span style={{color:C.faint}}>· {r.label} {r.year}</span>
- </div>
- ))}
- {(e.recordings||[]).length>3&&<div style={{color:C.faint,fontSize:10,marginTop:2}}>+ altri {(e.recordings||[]).length-3}…</div>}
- </div>
- <div style={{display:"flex",flexDirection:"column",gap:10,flexShrink:0}}>
- <button onClick={ev=>{ev.stopPropagation();setPdfEntry(e);}}
- style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.goldDim,padding:"6px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>↓ PDF</button>
- {!isBuiltin&&<button onClick={ev=>{ev.stopPropagation();setConfirmId(e.id);}}
- style={{background:"transparent",border:"1px solid #3a2020",color:"#8a5050",padding:"6px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>× Elimina</button>}
- </div>
- </div>
- </div>
- );
- })}
- </div>
- <div style={{padding:"14px 16px",borderTop:`1px solid ${C.border}`}}>
- <button onClick={()=>setShowExport(true)} style={{width:"100%",background:"transparent",border:`1px solid ${C.gold}44`,color:C.goldDim,padding:"8px",borderRadius:4,fontSize:12,cursor:"pointer",fontFamily:"Georgia"}}>
- ↑ Esporta biblioteca (testo copiabile)
- </button>
- <div style={{color:C.faint,fontSize:10,marginTop:8,textAlign:"center"}}>
- {library.length}/200 guide · Salvate in questo browser
- </div>
- {showExport&&(
- <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setShowExport(false)}>
- <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",maxWidth:600,maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
- <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
- <span style={{color:C.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase"}}>📋 Biblioteca — testo copiabile</span>
- <button onClick={()=>setShowExport(false)} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0}}>×</button>
- </div>
- <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
- <p style={{color:C.muted,fontSize:11}}>Tocca il testo e seleziona tutto per copiarlo.</p>
- </div>
- <textarea readOnly value={onExport()} onClick={e=>e.target.select()}
- style={{flex:1,background:"#0a0806",color:C.mid,border:"none",padding:"14px",fontSize:10,fontFamily:"monospace",lineHeight:1.6,resize:"none",outline:"none",minHeight:300}}/>
- </div>
- </div>
- )}
- {confirmId&&(
- <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setConfirmId(null)}>
- <div style={{background:C.bg2,border:"1px solid #3a2020",borderRadius:8,padding:"24px 28px",maxWidth:320,width:"100%",textAlign:"center"}} onClick={ev=>ev.stopPropagation()}>
- <div style={{color:"#c96060",fontSize:15,marginBottom:10}}>Rimuovi ricerca dalla biblioteca</div>
- <p style={{color:C.mid,fontSize:12,lineHeight:1.7,marginBottom:20}}>Vuoi rimuovere questa ricerca dalla biblioteca? La guida Bach precaricata non viene toccata.</p>
- <div style={{display:"flex",gap:10}}>
- <button onClick={()=>setConfirmId(null)} style={{flex:1,background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"9px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Annulla</button>
- <button onClick={()=>{onDelete(confirmId);setConfirmId(null);}} style={{flex:1,background:"#2a0f0f",border:"1px solid #5a2020",color:"#c96060",padding:"9px",borderRadius:4,fontSize:13,fontWeight:700,cursor:"pointer"}}>Rimuovi</button>
- </div>
- </div>
- </div>
- )}
- {pdfEntry&&(
- <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setPdfEntry(null)}>
- <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",maxWidth:600,maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
- <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
- <span style={{color:C.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase"}}>📋 {pdfEntry.work}</span>
- <button onClick={()=>setPdfEntry(null)} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0}}>×</button>
- </div>
- <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
- <p style={{color:C.muted,fontSize:11}}>Tocca il testo e seleziona tutto per copiarlo.</p>
- </div>
- <textarea readOnly value={onExport([pdfEntry])} onClick={e=>e.target.select()}
- style={{flex:1,background:"#0a0806",color:C.mid,border:"none",padding:"14px",fontSize:10,fontFamily:"monospace",lineHeight:1.6,resize:"none",outline:"none",minHeight:300}}/>
- </div>
- </div>
- )}
- </div>
- </div>
- </div>
- );
+  const [search,setSearch]=useState("");
+  const [sortBy,setSortBy]=useState("date");
+  const [showExport,setShowExport]=useState(false);
+  const [pdfEntry,setPdfEntry]=useState(null);
+  const [confirmId,setConfirmId]=useState(null);
+
+  const allEntries = useMemo(()=>{
+    const withBuiltin=[{...BUILTIN,_builtin:true},...library];
+    let filtered = search.trim()
+      ? withBuiltin.filter(e=>(e.work||"").toLowerCase().includes(search.toLowerCase())||(e.instrument||"").toLowerCase().includes(search.toLowerCase()))
+      : withBuiltin;
+    if(sortBy==="title") filtered=[...filtered].sort((a,b)=>(a.work||"").localeCompare(b.work||""));
+    return filtered;
+  },[library,search,sortBy]);
+
+  const avgStars = e => {
+    const recs=e.recordings||[];
+    if(!recs.length) return 0;
+    return Math.round((recs.reduce((s,r)=>s+(r.execStars||0)+(r.recStars||0),0))/(recs.length*2));
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"#000000aa",zIndex:2000,display:"flex",alignItems:"stretch",justifyContent:"flex-end"}} onClick={onClose}>
+      <div style={{width:520,maxWidth:"95vw",background:C.bg2,display:"flex",flexDirection:"column",borderLeft:`1px solid ${C.border}`,boxShadow:"-8px 0 40px #000000aa"}} onClick={e=>e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{padding:"18px 20px 14px",borderBottom:`1px solid ${C.border}`}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+            <div>
+              <span style={{color:C.gold,fontSize:13,letterSpacing:2,textTransform:"uppercase",fontFamily:"Georgia"}}>📚 Biblioteca</span>
+              <span style={{color:C.muted,fontSize:11,marginLeft:10}}>{library.length} guide salvate</span>
+            </div>
+            <button onClick={onClose} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0,lineHeight:1}}>×</button>
+          </div>
+
+          {/* Search */}
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cerca per compositore o strumento…"
+            style={{width:"100%",background:C.bg,border:`1px solid ${C.faint}`,color:C.cream,padding:"8px 11px",borderRadius:4,fontSize:12,outline:"none",marginBottom:10}}/>
+
+          <div style={{display:"flex",gap:4}}>
+            {[["Data","date"],["Titolo","title"]].map(([l,v])=>(
+              <button key={v} onClick={()=>setSortBy(v)} style={{background:sortBy===v?C.faint:"transparent",border:`1px solid ${C.faint}`,color:sortBy===v?C.gold:C.muted,padding:"4px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>↕ {l}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Guide list */}
+        <div style={{flex:1,overflowY:"auto",padding:"10px 12px"}}>
+          {allEntries.length===0&&<div style={{color:C.muted,fontSize:12,padding:"30px",textAlign:"center",lineHeight:1.8}}>
+            {search?"Nessuna guida trovata.":"Nessuna guida salvata ancora.\nLe ricerche appariranno qui automaticamente."}
+          </div>}
+          {allEntries.map((e,i)=>{
+            const isActive=activeId===e.id;
+            const isBuiltin=e._builtin;
+            // Index counts only real searches (excluding builtin)
+            const searchIdx = isBuiltin ? 1 : allEntries.slice(0,i).filter(x=>!x._builtin).length + 2;
+            return (
+              <div key={e.id||i} onClick={()=>{onSelect(e);onClose();}}
+                style={{background:isActive?C.bg3:C.bg,border:`1px solid ${isActive?C.gold+"66":C.border}`,borderRadius:6,padding:"12px 14px",marginBottom:8,cursor:"pointer",position:"relative",transition:"border-color 0.15s"}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                  {/* Index + count */}
+                  <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0,alignItems:"center"}}>
+                    <div style={{background:"#1a1408",border:`1px solid ${C.gold}55`,borderRadius:4,padding:"4px 8px",textAlign:"center",minWidth:36}}>
+                      <div style={{color:C.goldDim,fontSize:8,letterSpacing:0.5}}>#</div>
+                      <div style={{color:C.gold,fontSize:15,fontWeight:700,fontFamily:"Georgia"}}>{searchIdx}</div>
+                    </div>
+                    <div style={{background:"#0f1a14",border:"1px solid #2a4a30",borderRadius:4,padding:"4px 8px",textAlign:"center",minWidth:36}}>
+                      <div style={{color:C.green,fontSize:14,fontWeight:700,fontFamily:"monospace"}}>{(e.recordings||[]).length}</div>
+                      <div style={{color:"#4a7a5a",fontSize:8,letterSpacing:0.5}}>rec.</div>
+                    </div>
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{color:C.cream,fontSize:13,fontFamily:"Georgia",lineHeight:1.3,paddingRight:isBuiltin?0:22}}>{e.work}</div>
+                    <div style={{display:"flex",gap:8,marginTop:5,flexWrap:"wrap",alignItems:"center"}}>
+                      {e.instrument&&<span style={{color:C.muted,fontSize:10,background:C.faint,padding:"1px 7px",borderRadius:10}}>{e.instrument}</span>}
+                      <span style={{color:C.muted,fontSize:10}}>{e.savedAt}</span>
+                      <span style={{color:C.muted,fontSize:10}}>{(e.recordings||[]).length} registrazioni</span>
+                      <Stars n={avgStars(e)} size={10}/>
+                    </div>
+                    {/* Mini recording list */}
+                    {(e.recordings||[]).slice(0,3).map((r,ri)=>(
+                      <div key={ri} style={{color:C.muted,fontSize:10,marginTop:3,display:"flex",alignItems:"center",gap:5}}>
+                        <span style={{color:{A:C.green,B:C.amber,C:C.red}[r.level]||C.muted,fontSize:9}}>{r.level}</span>
+                        <span style={{color:C.mid}}>{r.interpreter}</span>
+                        <span style={{color:C.faint}}>· {r.label} {r.year}</span>
+                      </div>
+                    ))}
+                    {(e.recordings||[]).length>3&&<div style={{color:C.faint,fontSize:10,marginTop:2}}>+ altri {(e.recordings||[]).length-3}…</div>}
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:10,flexShrink:0}}>
+                    <button onClick={ev=>{ev.stopPropagation();setPdfEntry(e);}}
+                      style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.goldDim,padding:"6px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>↓ PDF</button>
+                    {!isBuiltin&&<button onClick={ev=>{ev.stopPropagation();setConfirmId(e.id);}}
+                      style={{background:"transparent",border:"1px solid #3a2020",color:"#8a5050",padding:"6px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>× Elimina</button>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{padding:"14px 16px",borderTop:`1px solid ${C.border}`}}>
+          <button onClick={()=>setShowExport(true)} style={{width:"100%",background:"transparent",border:`1px solid ${C.gold}44`,color:C.goldDim,padding:"8px",borderRadius:4,fontSize:12,cursor:"pointer",fontFamily:"Georgia"}}>
+            ↑ Esporta biblioteca (testo copiabile)
+          </button>
+          <div style={{color:C.faint,fontSize:10,marginTop:8,textAlign:"center"}}>
+            {library.length}/200 guide · Salvate in questo browser
+          </div>
+          {showExport&&(
+            <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setShowExport(false)}>
+              <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",maxWidth:600,maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+                <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{color:C.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase"}}>📋 Biblioteca — testo copiabile</span>
+                  <button onClick={()=>setShowExport(false)} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0}}>×</button>
+                </div>
+                <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
+                  <p style={{color:C.muted,fontSize:11}}>Tocca il testo e seleziona tutto per copiarlo.</p>
+                </div>
+                <textarea readOnly value={onExport()} onClick={e=>e.target.select()}
+                  style={{flex:1,background:"#0a0806",color:C.mid,border:"none",padding:"14px",fontSize:10,fontFamily:"monospace",lineHeight:1.6,resize:"none",outline:"none",minHeight:300}}/>
+              </div>
+            </div>
+          )}
+          {confirmId&&(
+            <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setConfirmId(null)}>
+              <div style={{background:C.bg2,border:"1px solid #3a2020",borderRadius:8,padding:"24px 28px",maxWidth:320,width:"100%",textAlign:"center"}} onClick={ev=>ev.stopPropagation()}>
+                <div style={{color:"#c96060",fontSize:15,marginBottom:10}}>Rimuovi ricerca dalla biblioteca</div>
+                <p style={{color:C.mid,fontSize:12,lineHeight:1.7,marginBottom:20}}>Vuoi rimuovere questa ricerca dalla biblioteca? La guida Bach precaricata non viene toccata.</p>
+                <div style={{display:"flex",gap:10}}>
+                  <button onClick={()=>setConfirmId(null)} style={{flex:1,background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"9px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Annulla</button>
+                  <button onClick={()=>{onDelete(confirmId);setConfirmId(null);}} style={{flex:1,background:"#2a0f0f",border:"1px solid #5a2020",color:"#c96060",padding:"9px",borderRadius:4,fontSize:13,fontWeight:700,cursor:"pointer"}}>Rimuovi</button>
+                </div>
+              </div>
+            </div>
+          )}
+          {pdfEntry&&(
+            <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setPdfEntry(null)}>
+              <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",maxWidth:600,maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+                <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{color:C.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase"}}>📋 {pdfEntry.work}</span>
+                  <button onClick={()=>setPdfEntry(null)} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0}}>×</button>
+                </div>
+                <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
+                  <p style={{color:C.muted,fontSize:11}}>Tocca il testo e seleziona tutto per copiarlo.</p>
+                </div>
+                <textarea readOnly value={onExport([pdfEntry])} onClick={e=>e.target.select()}
+                  style={{flex:1,background:"#0a0806",color:C.mid,border:"none",padding:"14px",fontSize:10,fontFamily:"monospace",lineHeight:1.6,resize:"none",outline:"none",minHeight:300}}/>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
+
 // ── SOURCES PANEL ─────────────────────────────────────────────────────────────
 function SourcesPanel() {
   const [open,setOpen]=useState(false);
@@ -403,22 +436,22 @@ function OpenOpusSearch({onComposer,onWork,searchKey}) {
  const works=async(id,name)=>{onComposer&&onComposer(name);setLoad(true);try{var r=await fetch("https://api.openopus.org/work/list/composer/"+id+"/genre/all.json");var d=await r.json();setRes({n:name,w:d.works||[]});setView("w");}catch(e){setRes({n:name,w:[]});setView("w");}finally{setLoad(false);}};
  var lst=(view==="c"||view==="p")?(view==="c"?res:pop):null;
  return(<div style={{marginBottom:14}}>
- <div style={{display:"flex",gap:6,marginBottom:6}}>
- <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="Cerca compositore..." style={{flex:1,background:"#0a0806",border:"2px solid #5a5040",color:"#fff",padding:"9px 10px",borderRadius:4,fontSize:13,outline:"none"}}/>
- <button onClick={pop2} style={{background:"transparent",border:"2px solid #5a5040",color:C.gold,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>{load?"⏳":"☰"}</button>
- {view&&<button onClick={()=>{setView(null);setRes(null);setQ("");}} style={{background:"transparent",border:"2px solid #5a5040",color:C.muted,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>×</button>}
- </div>
- <button onClick={go} disabled={load||!q.trim()} style={{width:"100%",background:q.trim()?C.gold:"#2a2520",color:q.trim()?"#000":"#555",border:"none",borderRadius:4,padding:"8px",fontSize:12,fontWeight:700,cursor:q.trim()?"pointer":"not-allowed",marginBottom:6}}>{load?"...":"🔎 Cerca"}</button>
- {lst&&lst.length>0&&(<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:6,padding:8,maxHeight:"40vh",overflowY:"auto"}}>
- {view==="p"&&<div style={{color:C.gold,fontSize:10,marginBottom:6}}>POPOLARI</div>}
- {lst.map(function(x){return(<div key={x[0]} onClick={function(){works(x[0],x[1]);}} style={{padding:"7px 8px",cursor:"pointer",borderBottom:"1px solid "+C.faint,color:C.cream,fontSize:13}}>{x[1]}</div>);})}
- </div>)}
- {view==="w"&&res&&(<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:6,padding:8,maxHeight:"45vh",overflowY:"auto"}}>
- <div style={{color:C.gold,fontSize:11,fontWeight:700,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
- <span>{res.n}</span><span style={{color:C.muted,fontSize:10,cursor:"pointer"}} onClick={()=>setView("c")}>←</span>
- </div>
- {res.w.map(function(w,i){return(<div key={i} onClick={function(){onWork&&onWork(w.title);}} style={{padding:"5px 0",borderBottom:"1px solid "+C.faint,display:"flex",justifyContent:"space-between",cursor:"pointer"}}><span style={{color:C.cream,fontSize:12}}>{w.title}</span><span style={{color:C.muted,fontSize:10}}>{w.genre}</span></div>);})}
- </div>)}
+  <div style={{display:"flex",gap:6,marginBottom:6}}>
+   <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="Cerca compositore..." style={{flex:1,background:"#0a0806",border:"2px solid #5a5040",color:"#fff",padding:"9px 10px",borderRadius:4,fontSize:13,outline:"none"}}/>
+   <button onClick={pop2} style={{background:"transparent",border:"2px solid #5a5040",color:C.gold,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>{load?"⏳":"☰"}</button>
+   {view&&<button onClick={()=>{setView(null);setRes(null);setQ("");}} style={{background:"transparent",border:"2px solid #5a5040",color:C.muted,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>×</button>}
+  </div>
+  <button onClick={go} disabled={load||!q.trim()} style={{width:"100%",background:q.trim()?C.gold:"#2a2520",color:q.trim()?"#000":"#555",border:"none",borderRadius:4,padding:"8px",fontSize:12,fontWeight:700,cursor:q.trim()?"pointer":"not-allowed",marginBottom:6}}>{load?"...":"🔎 Cerca"}</button>
+  {lst&&lst.length>0&&(<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:6,padding:8,maxHeight:"40vh",overflowY:"auto"}}>
+   {view==="p"&&<div style={{color:C.gold,fontSize:10,marginBottom:6}}>POPOLARI</div>}
+   {lst.map(function(x){return(<div key={x[0]} onClick={function(){works(x[0],x[1]);}} style={{padding:"7px 8px",cursor:"pointer",borderBottom:"1px solid "+C.faint,color:C.cream,fontSize:13}}>{x[1]}</div>);})}
+  </div>)}
+  {view==="w"&&res&&(<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:6,padding:8,maxHeight:"45vh",overflowY:"auto"}}>
+   <div style={{color:C.gold,fontSize:11,fontWeight:700,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
+    <span>{res.n}</span><span style={{color:C.muted,fontSize:10,cursor:"pointer"}} onClick={()=>setView("c")}>←</span>
+   </div>
+   {res.w.map(function(w,i){return(<div key={i} onClick={function(){onWork&&onWork(w.title);}} style={{padding:"5px 0",borderBottom:"1px solid "+C.faint,display:"flex",justifyContent:"space-between",cursor:"pointer"}}><span style={{color:C.cream,fontSize:12}}>{w.title}</span><span style={{color:C.muted,fontSize:10}}>{w.genre}</span></div>);})}
+  </div>)}
  </div>);
 }
 function SearchPanel({apiKey,onResults,onNeedKey,searchKey}) {
@@ -432,7 +465,7 @@ function SearchPanel({apiKey,onResults,onNeedKey,searchKey}) {
     if(!composer.trim()&&!work.trim())return;
     if(!apiKey){onNeedKey();return;}
     setLoading(true);setError(null);
-    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless: Gramophone, BBC, ClassicsToday, Guardian. qobuzUrl se noto.\nJSON: {\"work\":\"x\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null}]}";
+    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless Gramophone/BBC/ClassicsToday/Guardian. qobuzUrl se noto.\nJSON: {\"work\":\"x\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null}]}";
     try{
       var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:4000,messages:[{role:"user",content:p}]})});
       if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
@@ -475,7 +508,6 @@ function App() {
   const [showSetup,setShowSetup]=useState(false);
   const [ghTok,setGhTok]=useState("");
   const [searchKey,setSearchKey]=useState(0);
-  const [searchKey,setSearchKey]=useState(0);
   const [library,setLibrary]=useState([]);
   const [active,setActive]=useState(null);
   const [expanded,setExpanded]=useState(null);
@@ -511,17 +543,13 @@ function App() {
         };
       }),
     };
-    setActive(entry);setExpanded(null);setSearchKey(function(k){return k+1;});setSearchKey(function(k){return k+1;});
+    setActive(entry);setExpanded(null);setSearchKey(function(k){return k+1;});
     // Use ref to always have current library value, avoiding stale closure
     const updated=saveLibrary([...libraryRef.current,entry]);
     libraryRef.current=updated;
     setLibrary(updated);setFlash(true);setTimeout(()=>setFlash(false),2500);
   },[]);
 
-  const handleSaveQobuz=function(rec,url){
-    if(!active||!active.recordings)return;
-    var upd={...active,recordings:active.recordings.map(function(r){if(r.rank!==rec.rank||r.interpreter!==rec.interpreter)return r;if((r.qobuz||[]).some(function(q){return q.url===url;}))return r;return {...r,qobuz:[...(r.qobuz||[]),{label:"Ascolta",url:url}]};})};setActive(upd);var lu=libraryRef.current.map(function(e){return e.id===upd.id?upd:e;});saveLibrary(lu);libraryRef.current=lu;setLibrary(lu);window.GH.save(lu,window.GH.tok());
-  };
   const handleDelete=id=>{
     const updated=saveLibrary(libraryRef.current.filter(e=>e.id!==id));
     libraryRef.current=updated;
@@ -548,7 +576,7 @@ function App() {
           <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
             <div style={{flex:1,minWidth:0}}>
               <div style={{color:C.gold,fontSize:8,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Guida alle Registrazioni · Musica Classica</div>
-              <h1 style={{margin:0,fontSize:17,fontWeight:400,color:C.cream,lineHeight:1.2}}>Critica Discografica</h1>
+              <h1 style={{margin:0,fontSize:17,fontWeight:400,color:C.cream,lineHeight:1.2}}>Critica Discografica Specializzata</h1>
               <p style={{color:C.muted,fontSize:9,margin:"4px 0 0",lineHeight:1.5}}>Gramophone · BBC Music · ClassicsToday · The Guardian · Limelight</p>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end",flexShrink:0}}>
@@ -594,7 +622,7 @@ function App() {
         </div>
 
         {(active.recordings||[]).map((rec,i)=>(
-          <Card key={i} rec={rec} expanded={expanded===i} onToggle={()=>setExpanded(expanded===i?null:i)} work={active.work} onSave={handleSaveQobuz}/>
+          <Card key={i} rec={rec} expanded={expanded===i} onToggle={()=>setExpanded(expanded===i?null:i)} work={active.work}/>
         ))}
 
         {active.recommendation&&(
@@ -606,7 +634,7 @@ function App() {
 
         </div>}
         <div style={{borderTop:`1px solid ${C.bg3}`,marginTop:36,paddingTop:12,color:C.faint,fontSize:10}}>
-          Critica Discografica · Maggio 2026 · Salvata nel browser · {library.length}/200 guide
+          Critica Discografica Specializzata · Maggio 2026 · Biblioteca salvata in questo browser · {library.length}/200 guide
         </div>
       </div>
 
