@@ -220,162 +220,153 @@ function Card({rec,expanded,onToggle,work,onSave}) {
 
 // ── LIBRARY MODAL ─────────────────────────────────────────────────────────────
 function LibraryModal({library, activeId, onSelect, onDelete, onClose, onExport}) {
-  const [search,setSearch]=useState("");
-  const [sortBy,setSortBy]=useState("date");
-  const [showExport,setShowExport]=useState(false);
-  const [pdfEntry,setPdfEntry]=useState(null);
-  const [confirmId,setConfirmId]=useState(null);
-
-  const allEntries = useMemo(()=>{
-    const withBuiltin=[{...BUILTIN,_builtin:true},...library];
-    let filtered = search.trim()
-      ? withBuiltin.filter(e=>(e.work||"").toLowerCase().includes(search.toLowerCase())||(e.instrument||"").toLowerCase().includes(search.toLowerCase()))
-      : withBuiltin;
-    if(sortBy==="title") filtered=[...filtered].sort((a,b)=>(a.work||"").localeCompare(b.work||""));
-    return filtered;
-  },[library,search,sortBy]);
-
-  const avgStars = e => {
-    const recs=e.recordings||[];
-    if(!recs.length) return 0;
-    return Math.round((recs.reduce((s,r)=>s+(r.execStars||0)+(r.recStars||0),0))/(recs.length*2));
-  };
-
-  return (
-    <div style={{position:"fixed",inset:0,background:"#000000aa",zIndex:2000,display:"flex",alignItems:"stretch",justifyContent:"flex-end"}} onClick={onClose}>
-      <div style={{width:520,maxWidth:"95vw",background:C.bg2,display:"flex",flexDirection:"column",borderLeft:`1px solid ${C.border}`,boxShadow:"-8px 0 40px #000000aa"}} onClick={e=>e.stopPropagation()}>
-
-        {/* Header */}
-        <div style={{padding:"18px 20px 14px",borderBottom:`1px solid ${C.border}`}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-            <div>
-              <span style={{color:C.gold,fontSize:13,letterSpacing:2,textTransform:"uppercase",fontFamily:"Georgia"}}>📚 Biblioteca</span>
-              <span style={{color:C.muted,fontSize:11,marginLeft:10}}>{library.length} guide salvate</span>
-            </div>
-            <button onClick={onClose} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0,lineHeight:1}}>×</button>
-          </div>
-
-          {/* Search */}
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cerca per compositore o strumento…"
-            style={{width:"100%",background:C.bg,border:`1px solid ${C.faint}`,color:C.cream,padding:"8px 11px",borderRadius:4,fontSize:12,outline:"none",marginBottom:10}}/>
-
-          <div style={{display:"flex",gap:4}}>
-            {[["Data","date"],["Titolo","title"]].map(([l,v])=>(
-              <button key={v} onClick={()=>setSortBy(v)} style={{background:sortBy===v?C.faint:"transparent",border:`1px solid ${C.faint}`,color:sortBy===v?C.gold:C.muted,padding:"4px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>↕ {l}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* Guide list */}
-        <div style={{flex:1,overflowY:"auto",padding:"10px 12px"}}>
-          {allEntries.length===0&&<div style={{color:C.muted,fontSize:12,padding:"30px",textAlign:"center",lineHeight:1.8}}>
-            {search?"Nessuna guida trovata.":"Nessuna guida salvata ancora.\nLe ricerche appariranno qui automaticamente."}
-          </div>}
-          {allEntries.map((e,i)=>{
-            const isActive=activeId===e.id;
-            const isBuiltin=e._builtin;
-            // Index counts only real searches (excluding builtin)
-            const searchIdx = isBuiltin ? 1 : allEntries.slice(0,i).filter(x=>!x._builtin).length + 2;
-            return (
-              <div key={e.id||i} onClick={()=>{onSelect(e);onClose();}}
-                style={{background:isActive?C.bg3:C.bg,border:`1px solid ${isActive?C.gold+"66":C.border}`,borderRadius:6,padding:"12px 14px",marginBottom:8,cursor:"pointer",position:"relative",transition:"border-color 0.15s"}}>
-                <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
-                  {/* Index + count */}
-                  <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0,alignItems:"center"}}>
-                    <div style={{background:"#1a1408",border:`1px solid ${C.gold}55`,borderRadius:4,padding:"4px 8px",textAlign:"center",minWidth:36}}>
-                      <div style={{color:C.goldDim,fontSize:8,letterSpacing:0.5}}>#</div>
-                      <div style={{color:C.gold,fontSize:15,fontWeight:700,fontFamily:"Georgia"}}>{searchIdx}</div>
-                    </div>
-                    <div style={{background:"#0f1a14",border:"1px solid #2a4a30",borderRadius:4,padding:"4px 8px",textAlign:"center",minWidth:36}}>
-                      <div style={{color:C.green,fontSize:14,fontWeight:700,fontFamily:"monospace"}}>{(e.recordings||[]).length}</div>
-                      <div style={{color:"#4a7a5a",fontSize:8,letterSpacing:0.5}}>rec.</div>
-                    </div>
-                  </div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{color:C.cream,fontSize:13,fontFamily:"Georgia",lineHeight:1.3,paddingRight:isBuiltin?0:22}}>{e.work}</div>
-                    <div style={{display:"flex",gap:8,marginTop:5,flexWrap:"wrap",alignItems:"center"}}>
-                      {e.instrument&&<span style={{color:C.muted,fontSize:10,background:C.faint,padding:"1px 7px",borderRadius:10}}>{e.instrument}</span>}
-                      <span style={{color:C.muted,fontSize:10}}>{e.savedAt}</span>
-                      <span style={{color:C.muted,fontSize:10}}>{(e.recordings||[]).length} registrazioni</span>
-                      <Stars n={avgStars(e)} size={10}/>
-                    </div>
-                    {/* Mini recording list */}
-                    {(e.recordings||[]).slice(0,3).map((r,ri)=>(
-                      <div key={ri} style={{color:C.muted,fontSize:10,marginTop:3,display:"flex",alignItems:"center",gap:5}}>
-                        <span style={{color:{A:C.green,B:C.amber,C:C.red}[r.level]||C.muted,fontSize:9}}>{r.level}</span>
-                        <span style={{color:C.mid}}>{r.interpreter}</span>
-                        <span style={{color:C.faint}}>· {r.label} {r.year}</span>
-                      </div>
-                    ))}
-                    {(e.recordings||[]).length>3&&<div style={{color:C.faint,fontSize:10,marginTop:2}}>+ altri {(e.recordings||[]).length-3}…</div>}
-                  </div>
-                  <div style={{display:"flex",flexDirection:"column",gap:10,flexShrink:0}}>
-                    <button onClick={ev=>{ev.stopPropagation();setPdfEntry(e);}}
-                      style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.goldDim,padding:"6px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>↓ PDF</button>
-                    {!isBuiltin&&<button onClick={ev=>{ev.stopPropagation();setConfirmId(e.id);}}
-                      style={{background:"transparent",border:"1px solid #3a2020",color:"#8a5050",padding:"6px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>× Elimina</button>}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div style={{padding:"14px 16px",borderTop:`1px solid ${C.border}`}}>
-          <button onClick={()=>setShowExport(true)} style={{width:"100%",background:"transparent",border:`1px solid ${C.gold}44`,color:C.goldDim,padding:"8px",borderRadius:4,fontSize:12,cursor:"pointer",fontFamily:"Georgia"}}>
-            ↑ Esporta biblioteca (testo copiabile)
-          </button>
-          <div style={{color:C.faint,fontSize:10,marginTop:8,textAlign:"center"}}>
-            {library.length}/200 guide · Salvate in questo browser
-          </div>
-          {showExport&&(
-            <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setShowExport(false)}>
-              <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",maxWidth:600,maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
-                <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{color:C.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase"}}>📋 Biblioteca — testo copiabile</span>
-                  <button onClick={()=>setShowExport(false)} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0}}>×</button>
-                </div>
-                <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
-                  <p style={{color:C.muted,fontSize:11}}>Tocca il testo e seleziona tutto per copiarlo.</p>
-                </div>
-                <textarea readOnly value={onExport()} onClick={e=>e.target.select()}
-                  style={{flex:1,background:"#0a0806",color:C.mid,border:"none",padding:"14px",fontSize:10,fontFamily:"monospace",lineHeight:1.6,resize:"none",outline:"none",minHeight:300}}/>
-              </div>
-            </div>
-          )}
-          {confirmId&&(
-            <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setConfirmId(null)}>
-              <div style={{background:C.bg2,border:"1px solid #3a2020",borderRadius:8,padding:"24px 28px",maxWidth:320,width:"100%",textAlign:"center"}} onClick={ev=>ev.stopPropagation()}>
-                <div style={{color:"#c96060",fontSize:15,marginBottom:10}}>Rimuovi ricerca dalla biblioteca</div>
-                <p style={{color:C.mid,fontSize:12,lineHeight:1.7,marginBottom:20}}>Vuoi rimuovere questa ricerca dalla biblioteca? La guida Bach precaricata non viene toccata.</p>
-                <div style={{display:"flex",gap:10}}>
-                  <button onClick={()=>setConfirmId(null)} style={{flex:1,background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"9px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Annulla</button>
-                  <button onClick={()=>{onDelete(confirmId);setConfirmId(null);}} style={{flex:1,background:"#2a0f0f",border:"1px solid #5a2020",color:"#c96060",padding:"9px",borderRadius:4,fontSize:13,fontWeight:700,cursor:"pointer"}}>Rimuovi</button>
-                </div>
-              </div>
-            </div>
-          )}
-          {pdfEntry&&(
-            <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setPdfEntry(null)}>
-              <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",maxWidth:600,maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
-                <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{color:C.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase"}}>📋 {pdfEntry.work}</span>
-                  <button onClick={()=>setPdfEntry(null)} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0}}>×</button>
-                </div>
-                <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
-                  <p style={{color:C.muted,fontSize:11}}>Tocca il testo e seleziona tutto per copiarlo.</p>
-                </div>
-                <textarea readOnly value={onExport([pdfEntry])} onClick={e=>e.target.select()}
-                  style={{flex:1,background:"#0a0806",color:C.mid,border:"none",padding:"14px",fontSize:10,fontFamily:"monospace",lineHeight:1.6,resize:"none",outline:"none",minHeight:300}}/>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+ const [search,setSearch]=useState("");
+ const [sortBy,setSortBy]=useState("d");
+ const [showExport,setShowExport]=useState(false);
+ const [pdfEntry,setPdfEntry]=useState(null);
+ const [confirmId,setConfirmId]=useState(null);
+ const allEntries = useMemo(()=>{
+ const withBuiltin=[{...BUILTIN,_builtin:true},...library];
+ let filtered = search.trim()
+ ? withBuiltin.filter(e=>(e.work||"").toLowerCase().includes(search.toLowerCase())||(e.instrument||"").toLowerCase().includes(search.toLowerCase()))
+ : withBuiltin;
+ if(sortBy==="t") filtered=[...filtered].sort((a,b)=>(a.work||"").localeCompare(b.work||""));
+ return filtered;
+ },[library,search,sortBy]);
+ const avgStars = e => {
+ const recs=e.recordings||[];
+ if(!recs.length) return 0;
+ return Math.round((recs.reduce((s,r)=>s+(r.execStars||0)+(r.recStars||0),0))/(recs.length*2));
+ };
+ return (
+ <div style={{position:"fixed",inset:0,background:"#000000aa",zIndex:2000,display:"flex",alignItems:"stretch",justifyContent:"flex-end"}} onClick={onClose}>
+ <div style={{width:520,maxWidth:"95vw",background:C.bg2,display:"flex",flexDirection:"column",borderLeft:`1px solid ${C.border}`,boxShadow:"-8px 0 40px #000000aa"}} onClick={e=>e.stopPropagation()}>
+ {/* Header */}
+ <div style={{padding:"18px 20px 14px",borderBottom:`1px solid ${C.border}`}}>
+ <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+ <div>
+ <span style={{color:C.gold,fontSize:13,letterSpacing:2,textTransform:"uppercase",fontFamily:"Georgia"}}>📚 Biblioteca</span>
+ <span style={{color:C.muted,fontSize:11,marginLeft:10}}>{library.length} guide salvate</span>
+ </div>
+ <button onClick={onClose} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0,lineHeight:1}}>×</button>
+ </div>
+ {/* Search */}
+ <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cerca per compositore o strumento…"
+ style={{width:"100%",background:C.bg,border:`1px solid ${C.faint}`,color:C.cream,padding:"8px 11px",borderRadius:4,fontSize:12,outline:"none",marginBottom:10}}/>
+ <div style={{display:"flex",gap:4}}>
+ {[["Data","d"],["Titolo","t"]].map(([l,v])=>(
+ <button key={v} onClick={()=>setSortBy(v)} style={{background:sortBy===v?C.faint:"transparent",border:`1px solid ${C.faint}`,color:sortBy===v?C.gold:C.muted,padding:"4px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>↕ {l}</button>
+ ))}
+ </div>
+ </div>
+ {/* Guide list */}
+ <div style={{flex:1,overflowY:"auto",padding:"10px 12px"}}>
+ {allEntries.length===0&&<div style={{color:C.muted,fontSize:12,padding:"30px",textAlign:"center",lineHeight:1.8}}>
+ {search?"Nessuna guida trovata.":"Nessuna guida salvata ancora.\nLe ricerche appariranno qui automaticamente."}
+ </div>}
+ {allEntries.map((e,i)=>{
+ const isActive=activeId===e.id;
+ const isBuiltin=e._builtin;
+ // Index counts only real searches (excluding builtin)
+ const searchIdx = isBuiltin ? 1 : allEntries.slice(0,i).filter(x=>!x._builtin).length + 2;
+ return (
+ <div key={e.id||i} onClick={()=>{onSelect(e);onClose();}}
+ style={{background:isActive?C.bg3:C.bg,border:`1px solid ${isActive?C.gold+"66":C.border}`,borderRadius:6,padding:"12px 14px",marginBottom:8,cursor:"pointer",position:"relative",transition:"border-color 0.15s"}}>
+ <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+ {/* Index + count */}
+ <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0,alignItems:"center"}}>
+ <div style={{background:"#1a1408",border:`1px solid ${C.gold}55`,borderRadius:4,padding:"4px 8px",textAlign:"center",minWidth:36}}>
+ <div style={{color:C.goldDim,fontSize:8,letterSpacing:0.5}}>#</div>
+ <div style={{color:C.gold,fontSize:15,fontWeight:700,fontFamily:"Georgia"}}>{searchIdx}</div>
+ </div>
+ <div style={{background:"#0f1a14",border:"1px solid #2a4a30",borderRadius:4,padding:"4px 8px",textAlign:"center",minWidth:36}}>
+ <div style={{color:C.green,fontSize:14,fontWeight:700,fontFamily:"monospace"}}>{(e.recordings||[]).length}</div>
+ <div style={{color:"#4a7a5a",fontSize:8,letterSpacing:0.5}}>rec.</div>
+ </div>
+ </div>
+ <div style={{flex:1,minWidth:0}}>
+ <div style={{color:C.cream,fontSize:13,fontFamily:"Georgia",lineHeight:1.3,paddingRight:isBuiltin?0:22}}>{e.work}</div>
+ <div style={{display:"flex",gap:8,marginTop:5,flexWrap:"wrap",alignItems:"center"}}>
+ {e.instrument&&<span style={{color:C.muted,fontSize:10,background:C.faint,padding:"1px 7px",borderRadius:10}}>{e.instrument}</span>}
+ <span style={{color:C.muted,fontSize:10}}>{e.savedAt}</span>
+ <span style={{color:C.muted,fontSize:10}}>{(e.recordings||[]).length} registrazioni</span>
+ <Stars n={avgStars(e)} size={10}/>
+ </div>
+ {/* Mini recording list */}
+ {(e.recordings||[]).slice(0,3).map((r,ri)=>(
+ <div key={ri} style={{color:C.muted,fontSize:10,marginTop:3,display:"flex",alignItems:"center",gap:5}}>
+ <span style={{color:{A:C.green,B:C.amber,C:C.red}[r.level]||C.muted,fontSize:9}}>{r.level}</span>
+ <span style={{color:C.mid}}>{r.interpreter}</span>
+ <span style={{color:C.faint}}>· {r.label} {r.year}</span>
+ </div>
+ ))}
+ {(e.recordings||[]).length>3&&<div style={{color:C.faint,fontSize:10,marginTop:2}}>+ altri {(e.recordings||[]).length-3}…</div>}
+ </div>
+ <div style={{display:"flex",flexDirection:"column",gap:10,flexShrink:0}}>
+ <button onClick={ev=>{ev.stopPropagation();setPdfEntry(e);}}
+ style={{background:"transparent",border:`1px solid ${C.faint}`,color:C.goldDim,padding:"6px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>↓ PDF</button>
+ {!isBuiltin&&<button onClick={ev=>{ev.stopPropagation();setConfirmId(e.id);}}
+ style={{background:"transparent",border:"1px solid #3a2020",color:"#8a5050",padding:"6px 10px",borderRadius:3,fontSize:10,cursor:"pointer"}}>× Elimina</button>}
+ </div>
+ </div>
+ </div>
+ );
+ })}
+ </div>
+ <div style={{padding:"14px 16px",borderTop:`1px solid ${C.border}`}}>
+ <button onClick={()=>setShowExport(true)} style={{width:"100%",background:"transparent",border:`1px solid ${C.gold}44`,color:C.goldDim,padding:"8px",borderRadius:4,fontSize:12,cursor:"pointer",fontFamily:"Georgia"}}>
+ ↑ Esporta biblioteca (testo copiabile)
+ </button>
+ <div style={{color:C.faint,fontSize:10,marginTop:8,textAlign:"center"}}>
+ {library.length}/200 guide · Salvate in questo browser
+ </div>
+ {showExport&&(
+ <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setShowExport(false)}>
+ <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",maxWidth:600,maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+ <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+ <span style={{color:C.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase"}}>📋 Biblioteca — testo copiabile</span>
+ <button onClick={()=>setShowExport(false)} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0}}>×</button>
+ </div>
+ <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
+ <p style={{color:C.muted,fontSize:11}}>Tocca il testo e seleziona tutto per copiarlo.</p>
+ </div>
+ <textarea readOnly value={onExport()} onClick={e=>e.target.select()}
+ style={{flex:1,background:"#0a0806",color:C.mid,border:"none",padding:"14px",fontSize:10,fontFamily:"monospace",lineHeight:1.6,resize:"none",outline:"none",minHeight:300}}/>
+ </div>
+ </div>
+ )}
+ {confirmId&&(
+ <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:4000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setConfirmId(null)}>
+ <div style={{background:C.bg2,border:"1px solid #3a2020",borderRadius:8,padding:"24px 28px",maxWidth:320,width:"100%",textAlign:"center"}} onClick={ev=>ev.stopPropagation()}>
+ <div style={{color:"#c96060",fontSize:15,marginBottom:10}}>Rimuovi ricerca dalla biblioteca</div>
+ <p style={{color:C.mid,fontSize:12,lineHeight:1.7,marginBottom:20}}>Vuoi rimuovere questa ricerca dalla biblioteca? La guida Bach precaricata non viene toccata.</p>
+ <div style={{display:"flex",gap:10}}>
+ <button onClick={()=>setConfirmId(null)} style={{flex:1,background:"transparent",border:`1px solid ${C.faint}`,color:C.muted,padding:"9px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Annulla</button>
+ <button onClick={()=>{onDelete(confirmId);setConfirmId(null);}} style={{flex:1,background:"#2a0f0f",border:"1px solid #5a2020",color:"#c96060",padding:"9px",borderRadius:4,fontSize:13,fontWeight:700,cursor:"pointer"}}>Rimuovi</button>
+ </div>
+ </div>
+ </div>
+ )}
+ {pdfEntry&&(
+ <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:3000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setPdfEntry(null)}>
+ <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,width:"100%",maxWidth:600,maxHeight:"80vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+ <div style={{padding:"14px 18px",borderBottom:`1px solid ${C.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+ <span style={{color:C.gold,fontSize:12,letterSpacing:2,textTransform:"uppercase"}}>📋 {pdfEntry.work}</span>
+ <button onClick={()=>setPdfEntry(null)} style={{background:"none",border:"none",color:C.mid,fontSize:22,cursor:"pointer",padding:0}}>×</button>
+ </div>
+ <div style={{padding:"10px 14px",borderBottom:`1px solid ${C.border}`}}>
+ <p style={{color:C.muted,fontSize:11}}>Tocca il testo e seleziona tutto per copiarlo.</p>
+ </div>
+ <textarea readOnly value={onExport([pdfEntry])} onClick={e=>e.target.select()}
+ style={{flex:1,background:"#0a0806",color:C.mid,border:"none",padding:"14px",fontSize:10,fontFamily:"monospace",lineHeight:1.6,resize:"none",outline:"none",minHeight:300}}/>
+ </div>
+ </div>
+ )}
+ </div>
+ </div>
+ </div>
+ );
 }
-
 // ── SOURCES PANEL ─────────────────────────────────────────────────────────────
 function SourcesPanel() {
   const [open,setOpen]=useState(false);
