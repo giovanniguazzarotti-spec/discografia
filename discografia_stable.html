@@ -166,7 +166,7 @@ function Stars({n,size=12}) {
 }
 
 // ── RECORDING CARD ────────────────────────────────────────────────────────────
-function Card({rec,expanded,onToggle,work,onSave}) {
+function Card({rec,expanded,onToggle,work}) {
   const lvlBg={A:C.cardA,B:C.cardB,C:C.cardC}[rec.level]||C.bg2;
   const cc=rec.consensusIcon==="🟢"?C.green:rec.consensusIcon==="🔴"?C.red:C.amber;
   return (
@@ -207,8 +207,9 @@ function Card({rec,expanded,onToggle,work,onSave}) {
           </div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10}}>
             <button onClick={e=>{e.stopPropagation();window.open("https://open.qobuz.com","_blank");}} style={{background:"#1a3a2a",border:"1px solid #2a6a4a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📱 Qobuz</button>
-            {(()=>{var first=(rec.qobuz||[]).find(q=>q.url&&toOpenQobuz(q.url));return first?<button onClick={e=>{e.stopPropagation();window.open(toOpenQobuz(first.url),"_blank");}} style={{background:"#0e2a1a",border:"1px solid #1a5a30",color:"#4acf7a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>🎵 Ascolta</button>:null;})()}
-            {onSave&&<span onClick={e=>e.stopPropagation()} style={{display:"inline-flex",gap:4,alignItems:"center"}}><input id={"qu-"+rec.rank} placeholder="URL Qobuz..." style={{background:"#0a0806",border:"1px solid #2a5a2a",color:"#f0ead6",padding:"4px 8px",borderRadius:4,fontSize:10,outline:"none",width:160}}/><button onClick={e=>{e.stopPropagation();var inp=document.getElementById("qu-"+rec.rank);var raw=inp?inp.value.trim():"";var m=raw.match(/https:..open\.qobuz\.com.album.\w+/);var url=m?m[0]:(raw.startsWith("http")?raw:"");if(url){onSave(rec,url);inp.value="";}}} style={{background:"#1a3a1a",border:"1px solid #2a5a2a",color:"#7acf9a",padding:"4px 8px",borderRadius:4,fontSize:10,cursor:"pointer"}}>💾</button></span>}
+            {(rec.qobuz||[]).filter(q=>q.url&&toOpenQobuz(q.url)).slice(0,1).map((q,i)=>(
+              <button key={i} onClick={e=>{e.stopPropagation();window.open(toOpenQobuz(q.url),"_blank");}} style={{background:"#0e2a1a",border:"1px solid #1a5a30",color:"#4acf7a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>🎵 Ascolta</button>
+            ))}
             {(rec.reviews||[]).map((r,i)=>(<button key={i} onClick={e=>{e.stopPropagation();window.open(r.url,"_blank");}} style={{background:"#1a1f3a",border:"1px solid #2a3a6a",color:"#7a9acf",padding:"4px 10px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📰 {r.label}</button>))}
           </div>
         </div>
@@ -561,10 +562,6 @@ function App() {
     setLibrary(updated);setFlash(true);setTimeout(()=>setFlash(false),2500);
   },[]);
 
-  const handleSaveQobuz=function(rec,url){
-    if(!active||!active.recordings)return;
-    var upd={...active,recordings:active.recordings.map(function(r){if(r.rank!==rec.rank||r.interpreter!==rec.interpreter)return r;if((r.qobuz||[]).some(function(q){return q.url===url;}))return r;return {...r,qobuz:[...(r.qobuz||[]),{label:"Ascolta",url:url}]};})};setActive(upd);var lu=libraryRef.current.map(function(e){return e.id===upd.id?upd:e;});saveLibrary(lu);libraryRef.current=lu;setLibrary(lu);window.GH.save(lu,window.GH.tok());
-  };
   const handleDelete=id=>{
     const updated=saveLibrary(libraryRef.current.filter(e=>e.id!==id));
     libraryRef.current=updated;
@@ -637,7 +634,7 @@ function App() {
         </div>
 
         {(active.recordings||[]).map((rec,i)=>(
-          <Card key={i} rec={rec} expanded={expanded===i} onToggle={()=>setExpanded(expanded===i?null:i)} work={active.work} onSave={handleSaveQobuz}/>
+          <Card key={i} rec={rec} expanded={expanded===i} onToggle={()=>setExpanded(expanded===i?null:i)} work={active.work}/>
         ))}
 
         {active.recommendation&&(
