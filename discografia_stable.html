@@ -27,7 +27,7 @@ window.GH={
    var sha="";
    var r=await fetch("https://api.github.com/repos/"+this.REPO+"/contents/"+this.FILE,{headers:this.headers()});
    if(r.ok){var d=await r.json();sha=d.sha||"";}
-   var body={message:"Aggiorna biblioteca",content:btoa(unescape(encodeURIComponent(JSON.stringify(lib,null,0)))),branch:"main"};
+   var body={message:"Aggiorna biblioteca",content:btoa(Array.from(new TextEncoder().encode(JSON.stringify(lib)),function(b){return String.fromCharCode(b);}).join("")),branch:"main"};
    if(sha)body.sha=sha;
    var r2=await fetch("https://api.github.com/repos/"+this.REPO+"/contents/"+this.FILE,{method:"PUT",headers:this.headers(),body:JSON.stringify(body)});
    return r2.ok;
