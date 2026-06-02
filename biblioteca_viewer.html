@@ -5,192 +5,197 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Biblioteca Discografica</title>
 <style>
-* { box-sizing:border-box; margin:0; padding:0; }
-body { background:#0f0d09; color:#f0ead6; font-family:'Palatino Linotype',Georgia,serif; padding:20px; max-width:880px; margin:0 auto; }
-h1 { color:#c9a84c; font-weight:400; font-size:20px; margin-bottom:4px; }
-.subtitle { color:#6a5f4a; font-size:11px; margin-bottom:24px; }
-.entry { background:#17140f; border:1px solid #2e2820; border-radius:8px; padding:16px; margin-bottom:16px; }
-.entry h2 { color:#f0ead6; font-size:15px; font-style:italic; margin-bottom:4px; }
-.entry .meta { color:#6a5f4a; font-size:11px; margin-bottom:10px; }
-.rec { background:#0f0d09; border:1px solid #2e2820; border-radius:6px; padding:10px 14px; margin-bottom:8px; }
-.rec-header { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.rank { color:#c9a84c; font-size:18px; font-weight:700; min-width:22px; font-family:Georgia; }
-.interpreter { color:#f0ead6; font-size:14px; font-weight:600; }
-.level { background:#3a3020; color:#c9a84c; font-size:9px; padding:1px 5px; border-radius:3px; font-family:monospace; }
-.consensus { font-size:11px; }
-.label { color:#6a5f4a; font-size:11px; margin-top:2px; }
-.stars { color:#c9a84c; font-size:11px; }
-.stars-empty { color:#3a3020; font-size:11px; }
-.notes { color:#9a8e7a; font-size:11px; margin-top:6px; line-height:1.6; }
-.critical { color:#9a8e7a; font-size:11px; margin-top:4px; line-height:1.6; background:#0a0806; padding:6px 10px; border-radius:4px; }
-.btns { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
-.btn-q { background:#0e2a1a; border:1px solid #3a8a50; color:#4acf7a; padding:4px 10px; border-radius:4px; font-size:10px; cursor:pointer; text-decoration:none; display:inline-block; }
-.btn-r { background:#1a1f3a; border:1px solid #4a5a9a; color:#7a9acf; padding:4px 10px; border-radius:4px; font-size:10px; cursor:pointer; text-decoration:none; display:inline-block; }
-.recommendation { background:#17140f; border:1px solid #c9a84c44; border-radius:6px; padding:10px 14px; margin-top:8px; color:#9a8e7a; font-size:12px; line-height:1.7; }
-.rec-label { color:#c9a84c; font-size:9px; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px; }
-#loading { color:#6a5f4a; text-align:center; padding:40px; }
-#error { color:#c96060; padding:20px; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f0d09;color:#f0ead6;font-family:'Palatino Linotype',Georgia,serif;padding:16px;max-width:880px;margin:0 auto}
+h1{color:#c9a84c;font-weight:400;font-size:19px;margin-bottom:2px}
+.sub{color:#6a5f4a;font-size:11px;margin-bottom:16px}
+input{width:100%;background:#17140f;border:1px solid #2e2820;color:#f0ead6;padding:10px 14px;border-radius:6px;font-size:13px;outline:none;margin-bottom:16px;font-family:inherit}
+.composer-block{margin-bottom:20px}
+.composer-name{color:#c9a84c;font-size:13px;letter-spacing:2px;text-transform:uppercase;padding:8px 0 6px;border-bottom:1px solid #2e2820;margin-bottom:8px}
+.work-row{background:#17140f;border:1px solid #2e2820;border-radius:6px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
+.work-title{color:#f0ead6;font-size:14px;font-style:italic}
+.work-meta{color:#6a5f4a;font-size:10px;margin-top:3px}
+.work-summary{color:#9a8e7a;font-size:11px;line-height:1.65;margin-top:8px}
+.recordings{margin-top:10px;display:none}
+.recordings.open{display:block}
+.rec{background:#0f0d09;border:1px solid #2e2820;border-radius:5px;padding:10px 13px;margin-bottom:7px}
+.rec-header{display:flex;align-items:flex-start;gap:10px}
+.rec-rank{color:#c9a84c;font-size:18px;font-weight:700;min-width:22px;font-family:Georgia;flex-shrink:0}
+.rec-info{flex:1}
+.rec-name{color:#f0ead6;font-size:13px;font-weight:600}
+.rec-lvl{background:#3a3020;color:#c9a84c;font-size:9px;padding:1px 5px;border-radius:3px;font-family:monospace;margin-left:6px}
+.rec-consensus{font-size:11px;margin-left:4px}
+.rec-label{color:#6a5f4a;font-size:11px;margin-top:2px}
+.stars{color:#c9a84c;font-size:11px}
+.stars-dim{color:#3a3020;font-size:11px}
+.rec-stars-row{display:flex;gap:16px;margin-top:6px}
+.star-block{display:flex;align-items:center;gap:5px}
+.star-lbl{color:#6a5f4a;font-size:9px;letter-spacing:1px}
+.note-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.note-box{background:#0a0806;border-radius:4px;padding:8px 10px}
+.note-ttl{color:#c9a84c;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+.note-txt{color:#9a8e7a;font-size:11px;line-height:1.6}
+.critical{background:#0a0806;border-radius:4px;padding:8px 10px;margin-top:6px}
+.btns{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.btns2{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.btn-q{background:#0e2a1a;border:1px solid #3a8a50;color:#4acf7a;padding:4px 9px;border-radius:4px;font-size:10px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn-r{background:#1a1f3a;border:1px solid #4a5a9a;color:#7a9acf;padding:4px 9px;border-radius:4px;font-size:10px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn-app{background:#1a3a2a;border:1px solid #4a9a6a;color:#7acf9a;padding:4px 9px;border-radius:4px;font-size:10px;cursor:pointer;display:inline-block;text-decoration:none}
+.url-row{display:inline-flex;gap:4px;align-items:center;margin-top:4px}
+.url-inp{background:#0a0806;border:1px solid #4a8a4a;color:#f0ead6;padding:4px 7px;border-radius:4px;font-size:10px;outline:none;width:150px;font-family:inherit}
+.btn-save{background:#1a3a1a;border:1px solid #4a8a4a;color:#7acf9a;padding:4px 7px;border-radius:4px;font-size:10px;cursor:pointer}
+.recommend{background:#17140f;border:1px solid #c9a84c44;border-radius:5px;padding:10px 13px;margin-top:8px;color:#9a8e7a;font-size:11px;line-height:1.7}
+.rec-lbl{color:#c9a84c;font-size:9px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+#msg{position:fixed;bottom:16px;right:16px;background:#1a3a1a;border:1px solid #4a9a6a;color:#7acf9a;padding:8px 14px;border-radius:6px;font-size:12px;display:none}
 </style>
 </head>
 <body>
 <h1>📚 Biblioteca Discografica</h1>
-<p class="subtitle">Caricata da GitHub · <span id="count"></span></p>
-<input id="search" placeholder="Cerca compositore, opera, interprete..." oninput="filterLib()" style="width:100%;background:#17140f;border:1px solid #2e2820;color:#f0ead6;padding:10px 14px;border-radius:6px;font-size:13px;outline:none;margin-bottom:16px;font-family:inherit"/>
-<div id="loading">Caricamento biblioteca...</div>
+<p class="sub" id="sub">Caricamento...</p>
+<input id="search" placeholder="Cerca compositore, opera, interprete..." oninput="filter()" />
 <div id="content"></div>
+<div id="msg">✓ Salvato</div>
 
 <script>
-const REPO="giovanniguazzarotti-spec/discografia";
-const GH_FILE="biblioteca.json";
+var ALL=[]; var REPO="giovanniguazzarotti-spec/discografia"; var GH_FILE="biblioteca.json";
 function ghTok(){try{return localStorage.getItem("cdc_gh_tok_v1")||"";}catch{return "";}}
-function ghHeaders(){return{"Authorization":"token "+ghTok(),"Content-Type":"application/json","User-Agent":"DiscografiaApp"};}
+function ghH(){return{"Authorization":"token "+ghTok(),"Content-Type":"application/json","User-Agent":"DA"};}
+function st(n){return"★".repeat(n||0)+'<span class="stars-dim">'+"★".repeat(5-(n||0))+"</span>";}
+function toQ(url){if(!url)return null;try{var u=new URL(url);var p=u.pathname.split("/").filter(Boolean);var id=p[p.length-1];return id?"https://open.qobuz.com/album/"+id:url;}catch{return url;}}
+
 async function ghPush(lib){
   var t=ghTok();if(!t)return;
   try{
-    var sha="";
-    var r=await fetch("https://api.github.com/repos/"+REPO+"/contents/"+GH_FILE,{headers:ghHeaders()});
+    var sha="";var r=await fetch("https://api.github.com/repos/"+REPO+"/contents/"+GH_FILE,{headers:ghH()});
     if(r.ok){var d=await r.json();sha=d.sha||"";}
-    var body={message:"Aggiorna biblioteca",content:btoa(unescape(encodeURIComponent(JSON.stringify(lib,null,0)))),branch:"main"};
+    var body={message:"Aggiorna biblioteca",content:btoa(unescape(encodeURIComponent(JSON.stringify(lib)))),branch:"main"};
     if(sha)body.sha=sha;
-    await fetch("https://api.github.com/repos/"+REPO+"/contents/"+GH_FILE,{method:"PUT",headers:ghHeaders(),body:JSON.stringify(body)});
-  }catch(e){console.error(e);}
+    await fetch("https://api.github.com/repos/"+REPO+"/contents/"+GH_FILE,{method:"PUT",headers:ghH(),body:JSON.stringify(body)});
+    showMsg();
+  }catch(e){}
 }
-function toOpenQobuz(url){
-  if(!url)return null;
-  try{const u=new URL(url);const p=u.pathname.split("/").filter(Boolean);const id=p[p.length-1];return id?"https://open.qobuz.com/album/"+id:url;}catch{return url;}
-}
-function saveQobuzToRec(lib,entryId,recRank,recInterpreter,url){
-  return lib.map(function(e){
+
+function showMsg(){var m=document.getElementById("msg");m.style.display="block";setTimeout(function(){m.style.display="none";},2000);}
+
+function saveUrl(entryId,rank,fieldId){
+  var inp=document.getElementById(fieldId);if(!inp)return;
+  var raw=inp.value.trim();
+  var m=raw.match(/https:\/\/open\.qobuz\.com\/album\/\w+/);
+  var url=m?m[0]:(raw.startsWith("http")?raw:"");
+  if(!url)return;
+  ALL=ALL.map(function(e){
     if(e.id!==entryId)return e;
-    return {...e,recordings:(e.recordings||[]).map(function(r){
-      if(r.rank!==recRank)return r;
+    return Object.assign({},e,{recordings:(e.recordings||[]).map(function(r){
+      if(r.rank!==rank)return r;
       if((r.qobuz||[]).some(function(q){return q.url===url;}))return r;
-      return {...r,qobuz:[...(r.qobuz||[]),{label:"Ascolta",url:url}]};
-    })};
+      return Object.assign({},r,{qobuz:[].concat(r.qobuz||[],[{label:"Ascolta",url:url}])});
+    })});
   });
+  inp.value="";
+  ghPush(ALL);
+  filter();
 }
 
-const C = {green:"#5a9e70",amber:"#c9a84c",red:"#c96060",muted:"#6a5f4a"};
-function stars(n) {
-  return '★'.repeat(n||0) + '<span class="stars-empty">' + '★'.repeat(5-(n||0)) + '</span>';
-}
-function toOpenQobuz(url) {
-  if(!url) return null;
-  try { const u=new URL(url); const p=u.pathname.split('/').filter(Boolean); const id=p[p.length-1]; return id?'https://open.qobuz.com/album/'+id:url; } catch{return url;}
+function extractComposer(work){
+  if(!work)return"Sconosciuto";
+  var m=work.match(/^([^–—\-]+)[–—\-]/);
+  return m?m[1].trim():work.split(" ").slice(0,2).join(" ");
 }
 
-var ALL_LIB = [];
-
-function filterLib() {
-  var q = document.getElementById('search').value.toLowerCase().trim();
-  var filtered = q ? ALL_LIB.filter(function(e){
-    return (e.work||'').toLowerCase().includes(q)
-      || (e.instrument||'').toLowerCase().includes(q)
-      || (e.recordings||[]).some(function(r){ return (r.interpreter||'').toLowerCase().includes(q); });
-  }) : ALL_LIB;
-  document.getElementById('count').textContent = filtered.length + '/' + ALL_LIB.length + ' guide';
-  render(filtered);
+function renderLib(lib){
+  var groups={};
+  lib.forEach(function(e){
+    var comp=extractComposer(e.work);
+    if(!groups[comp])groups[comp]=[];
+    groups[comp].push(e);
+  });
+  var html="";
+  Object.keys(groups).sort().forEach(function(comp){
+    html+='<div class="composer-block"><div class="composer-name">'+comp+'</div>';
+    groups[comp].forEach(function(e){
+      var recHtml=renderRecs(e);
+      html+='<div class="work-row" onclick="toggleRecs(\''+e.id+'\')">'
+        +'<div class="work-title">'+e.work.replace(/^[^–—\-]+[–—\-]\s*/,"")+'</div>'
+        +'<div class="work-meta">'+(e.instrument?e.instrument+" · ":"")+e.savedAt+" · "+(e.recordings||[]).length+" registrazioni</div>"
+        +(e.summary?'<div class="work-summary">'+e.summary+"</div>":"")
+        +'<div class="recordings" id="recs-'+e.id+'">'+recHtml
+        +(e.recommendation?'<div class="recommend"><div class="rec-lbl">💡 Consiglio finale</div>'+e.recommendation+"</div>":"")
+        +"</div></div>";
+    });
+    html+="</div>";
+  });
+  document.getElementById("content").innerHTML=html||'<p style="color:#6a5f4a;padding:20px">Nessuna guida trovata.</p>';
 }
 
-function saveUrl(entryId, recRank, fieldId) {
-  var inp = document.getElementById(fieldId);
-  if(!inp) return;
-  var raw = inp.value.trim();
-  var m = raw.match(/https:\/\/open\.qobuz\.com\/album\/\w+/);
-  var url = m ? m[0] : (raw.startsWith("http") ? raw : "");
-  if(!url) return;
-  var entry = ALL_LIB.find(function(e){return e.id===entryId;});
-  if(!entry) return;
-  var rec = (entry.recordings||[]).find(function(r){return r.rank===recRank;});
-  if(!rec) return;
-  ALL_LIB = saveQobuzToRec(ALL_LIB, entryId, recRank, rec.interpreter, url);
-  inp.value = "";
-  ghPush(ALL_LIB);
-  filterLib();
+function renderRecs(e){
+  return(e.recordings||[]).map(function(rec){
+    var cc=rec.consensusIcon==="🟢"?"#5a9e70":rec.consensusIcon==="🔴"?"#c96060":"#c9a84c";
+    var uid=e.id.slice(-6)+"-"+rec.rank;
+    var firstQ=(rec.qobuz||[]).find(function(q){return q.url&&toQ(q.url);});
+    var qLinks='<a class="btn-app" href="https://open.qobuz.com/album/0060253780968" target="_blank" rel="noopener">📱 Qobuz</a>';
+    if(firstQ)qLinks+=' <a class="btn-q" href="'+toQ(firstQ.url)+'" target="_blank" rel="noopener,noreferrer">🎵 Ascolta</a>';
+    var rLinks=(rec.reviews||[]).filter(function(r){return r.url;}).map(function(r){return'<a class="btn-r" href="'+r.url+'" target="_blank" rel="noopener">📰 '+r.label+"</a>";}).join(" ");
+    return'<div class="rec" onclick="event.stopPropagation()">'
+      +'<div class="rec-header">'
+        +'<div class="rec-rank">'+rec.rank+"</div>"
+        +'<div class="rec-info">'
+          +'<div><span class="rec-name">'+rec.interpreter+'</span><span class="rec-lvl">LIV.'+rec.level+'</span><span class="rec-consensus" style="color:'+cc+'">'+rec.consensusIcon+" "+rec.consensus+"</span></div>"
+          +'<div class="rec-label">'+rec.label+" · "+rec.year+(rec.books?" · "+rec.books:"")+"</div>"
+        +"</div>"
+      +"</div>"
+      +'<div class="rec-stars-row">'
+        +'<div class="star-block"><span class="star-lbl">ESEC.</span><span class="stars">'+st(rec.execStars)+"</span></div>"
+        +'<div class="star-block"><span class="star-lbl">REG.</span><span class="stars">'+st(rec.recStars)+"</span></div>"
+      +"</div>"
+      +(rec.execNote||rec.recNote?'<div class="note-grid">'
+        +(rec.execNote?'<div class="note-box"><div class="note-ttl">⭐ Esecuzione</div><div class="note-txt">'+rec.execNote+"</div></div>":"")
+        +(rec.recNote?'<div class="note-box"><div class="note-ttl">🎙️ Registrazione</div><div class="note-txt">'+rec.recNote+"</div></div>":"")
+        +"</div>":"")
+      +(rec.criticalNote?'<div class="critical"><div class="note-ttl">📰 Critica</div><div class="note-txt">'+rec.criticalNote+"</div></div>":"")
+      +(rLinks?'<div class="btns2">'+rLinks+"</div>":"")
+      +'<div class="btns">'+qLinks
+        +'<span class="url-row" onclick="event.stopPropagation()">'
+          +'<input class="url-inp" id="qu-'+uid+'" placeholder="URL Qobuz..."/>'
+          +'<button class="btn-save" onclick="saveUrl(\''+e.id+'\','+rec.rank+',\'qu-'+uid+'\')">💾</button>'
+        +"</span>"
+      +"</div>"
+    +"</div>";
+  }).join("");
 }
 
-document.addEventListener('click', function(ev) {
-  var btn = ev.target.closest('.save-btn');
-  if(!btn) return;
-  saveUrl(btn.dataset.entry, parseInt(btn.dataset.rank), btn.dataset.field);
-});
+function toggleRecs(id){
+  var el=document.getElementById("recs-"+id);
+  if(el)el.classList.toggle("open");
+}
 
-async function load() {
-  try {
-    // Prova prima GitHub Pages (veloce), poi API GitHub (affidabile)
-    var lib = null;
-    try {
-      var r1 = await fetch('https://giovanniguazzarotti-spec.github.io/discografia/biblioteca.json?t='+Date.now());
-      if(r1.ok) lib = await r1.json();
-    } catch(e1) {}
-    if(!lib) {
-      var tok = ghTok();
-      var headers2 = tok ? ghHeaders() : {"User-Agent":"DiscografiaApp"};
-      var r2 = await fetch('https://api.github.com/repos/giovanniguazzarotti-spec/discografia/contents/biblioteca.json', {headers:headers2});
-      if(!r2.ok) throw new Error('File non trovato ('+r2.status+')');
-      var d2 = await r2.json();
-      lib = JSON.parse(atob(d2.content.replace(/\n/g,'')));
+function filter(){
+  var q=document.getElementById("search").value.toLowerCase().trim();
+  var filtered=q?ALL.filter(function(e){
+    return(e.work||"").toLowerCase().includes(q)
+      ||(e.instrument||"").toLowerCase().includes(q)
+      ||(e.recordings||[]).some(function(r){return(r.interpreter||"").toLowerCase().includes(q);});
+  }):ALL;
+  document.getElementById("sub").textContent=filtered.length+"/"+ALL.length+" guide";
+  renderLib(filtered);
+}
+
+async function load(){
+  try{
+    var lib=null;
+    try{var r1=await fetch("https://giovanniguazzarotti-spec.github.io/discografia/biblioteca.json?t="+Date.now());if(r1.ok)lib=await r1.json();}catch(e1){}
+    if(!lib){
+      var h=ghTok()?ghH():{"User-Agent":"DA"};
+      var r2=await fetch("https://api.github.com/repos/"+REPO+"/contents/"+GH_FILE,{headers:h});
+      if(!r2.ok)throw new Error("File non trovato ("+r2.status+")");
+      var d=await r2.json();lib=JSON.parse(atob(d.content.replace(/\n/g,"")));
     }
-    ALL_LIB = lib;
-    render(lib);
-    
-  } catch(e) {
-    document.getElementById('loading').style.display='none';
-    document.getElementById('content').innerHTML = '<div id="error">Errore: '+e.message+'<br><small>Assicurati di aver salvato almeno una ricerca nell\'app principale.</small></div>';
+    ALL=lib;
+    document.getElementById("sub").textContent=lib.length+" guide salvate";
+    renderLib(lib);
+  }catch(e){
+    document.getElementById("sub").textContent="Errore: "+e.message;
   }
 }
-
-function render(lib) {
-  document.getElementById('loading').style.display='none';
-  document.getElementById('count').textContent = lib.length + ' guide salvate';
-  const el = document.getElementById('content');
-  if(!lib.length) { el.innerHTML='<div style="color:#6a5f4a;padding:40px;text-align:center">Nessuna guida salvata.</div>'; return; }
-  el.innerHTML = lib.map((e,i) => {
-    const recs = (e.recordings||[]).map(rec => {
-      const cc = rec.consensusIcon==='🟢'?C.green:rec.consensusIcon==='🔴'?C.red:C.amber;
-      const firstQobuz = (rec.qobuz||[]).find(q=>q.url&&toOpenQobuz(q.url));
-      const ascoltaBtn = firstQobuz ? '<a class="btn-q" href="'+toOpenQobuz(firstQobuz.url)+'" target="_blank" rel="noopener,noreferrer">🎵 Ascolta</a>' : '';
-      const qobuzBtn = '<a class="btn-q" href="https://open.qobuz.com/album/0060253780968" target="_blank" rel="noopener,noreferrer">📱 Qobuz</a>';
-      const urlFieldId = "qu-"+e.id.slice(-6)+"-"+rec.rank;
-      const urlField = '<span style="display:inline-flex;gap:4px;align-items:center;margin-top:4px">'
-        +'<input id="'+urlFieldId+'" placeholder="URL Qobuz..." style="background:#0a0806;border:1px solid #4a8a4a;color:#f0ead6;padding:4px 7px;border-radius:4px;font-size:10px;outline:none;width:150px"/>'
-        +'<button class="save-btn" data-entry="'+e.id+'" data-rank="'+rec.rank+'" data-field="'+urlFieldId+'" style="background:#1a3a1a;border:1px solid #4a8a4a;color:#7acf9a;padding:4px 7px;border-radius:4px;font-size:10px;cursor:pointer">💾</button>'
-        +'</span>';
-      const rLinks = (rec.reviews||[]).filter(r=>r.url).map(r =>
-        '<a class="btn-r" href="'+r.url+'" target="_blank" rel="noopener">📰 '+r.label+'</a>'
-      ).join('');
-      const qLinks = qobuzBtn + ascoltaBtn;
-      return '<div class="rec">'+
-        '<div class="rec-header">'+
-          '<span class="rank">'+rec.rank+'</span>'+
-          '<div style="flex:1">'+
-            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
-              '<span class="interpreter">'+rec.interpreter+'</span>'+
-              '<span class="level">LIV.'+rec.level+'</span>'+
-              '<span class="consensus" style="color:'+cc+'">'+rec.consensusIcon+' '+rec.consensus+'</span>'+
-            '</div>'+
-            '<div class="label">'+rec.label+' · '+rec.year+(rec.books?' · '+rec.books:'')+'</div>'+
-          '</div>'+
-          '<div style="display:flex;gap:12px">'+
-            '<div style="text-align:center"><div style="color:#6a5f4a;font-size:8px;letter-spacing:1px">ESEC.</div><span class="stars">'+stars(rec.execStars)+'</span></div>'+
-            '<div style="text-align:center"><div style="color:#6a5f4a;font-size:8px;letter-spacing:1px">REG.</div><span class="stars">'+stars(rec.recStars)+'</span></div>'+
-          '</div>'+
-        '</div>'+
-        (rec.execNote?'<div class="notes">'+rec.execNote+'</div>':'')+
-        (rec.criticalNote?'<div class="critical">'+rec.criticalNote+'</div>':'')+
-        '<div class="btns">'+qLinks+urlField+'</div>'+(rLinks?'<div class="btns" style="margin-top:4px">'+rLinks+'</div>':'')+
-      '</div>';
-    }).join('');
-    return '<div class="entry">'+
-      '<h2>'+(i+1)+'. '+e.work+'</h2>'+
-      '<div class="meta">'+(e.instrument?e.instrument+' · ':'')+e.savedAt+'</div>'+
-      (e.summary?'<p style="color:#9a8e7a;font-size:12px;line-height:1.65;margin-bottom:10px">'+e.summary+'</p>':'')+
-      recs+
-      (e.recommendation?'<div class="recommendation"><div class="rec-label">💡 Consiglio finale</div>'+e.recommendation+'</div>':'')+
-    '</div>';
-  }).join('');
-}
-
 load();
 </script>
 </body>
