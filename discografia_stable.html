@@ -445,7 +445,7 @@ function OpenOpusSearch({onComposer,onWork,searchKey}) {
  const [q,setQ]=React.useState(""); const [res,setRes]=React.useState(null);
  const [load,setLoad]=React.useState(false); const [view,setView]=React.useState(null);
  const [pop,setPop]=React.useState([]);
- const FB=[[87,"Bach"],[145,"Beethoven"],[33,"Brahms"],[196,"Chopin"],[97,"Mozart"],[104,"Schubert"],[159,"Tchaikovsky"],[175,"Vivaldi"]];
+ const FB=[[87,"Bach"],[145,"Beethoven"],[33,"Brahms"],[2,"Bruckner"],[196,"Chopin"],[56,"Debussy"],[43,"Dvořák"],[49,"Handel"],[53,"Haydn"],[60,"Liszt"],[64,"Mahler"],[72,"Mendelssohn"],[97,"Mozart"],[99,"Mussorgsky"],[107,"Prokofiev"],[110,"Rachmaninoff"],[111,"Ravel"],[116,"Saint-Saëns"],[104,"Schubert"],[129,"Schumann"],[138,"Shostakovich"],[141,"Sibelius"],[149,"Strauss R."],[155,"Stravinsky"],[159,"Tchaikovsky"],[172,"Verdi"],[175,"Vivaldi"],[181,"Wagner"]];
  React.useEffect(function(){setView(null);setRes(null);},[searchKey]);
  const go=async()=>{if(!q.trim())return;setLoad(true);try{var r=await fetch("https://api.openopus.org/composer/list/search/"+encodeURIComponent(q)+".json");var d=await r.json();setRes((d.composers||[]).map(function(x){return[+x.id,x.complete_name];}));setView("c");}catch(e){}finally{setLoad(false);}};
  const pop2=async()=>{if(pop.length){setView("p");return;}setLoad(true);try{var r=await fetch("https://api.openopus.org/composer/list/pop.json");var d=await r.json();var p=d.composers&&d.composers.length?d.composers.map(function(x){return[+x.id,x.complete_name];}):FB;setPop(p);setView("p");}catch(e){setPop(FB);setView("p");}finally{setLoad(false);}};
