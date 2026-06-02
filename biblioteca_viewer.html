@@ -133,7 +133,7 @@ function renderLib(lib){
       var recsHtml=buildRecs(e);
       html+='<div class="work-row" onclick="toggle(\''+e.id+'\')">'
         +'<div class="work-top"><span class="work-title">'+wt+'</span><span class="work-arrow" id="a-'+e.id+'">▼</span></div>'
-        +'<div class="work-meta">'+(e.instrument?e.instrument+" · ":"")+e.savedAt+" · "+(e.recordings||[]).length+" registrazioni</div>"
+        +'<div class="work-meta">'+(e.instrument?e.instrument+" · ":"")+( e.compositionYear?e.compositionYear+" · ":"")+( e.recordings||[]).length+" registrazioni</div>"
         +(e.summary?'<div class="work-summary">'+e.summary+"</div>":"")
         +'<div class="recordings" id="r-'+e.id+'" onclick="event.stopPropagation()">'+recsHtml
         +(e.recommendation?'<div class="reco"><div class="rl">💡 Consiglio finale</div>'+e.recommendation+"</div>":"")
@@ -153,7 +153,7 @@ function buildRecs(e){
     return'<div class="rec">'
       +'<div class="rec-header"><div class="rec-rank">'+rec.rank+'</div>'
       +'<div style="flex:1"><div><span class="rec-name">'+rec.interpreter+'</span><span class="rec-lvl">LIV.'+rec.level+'</span><span class="rec-cons" style="color:'+cc+'">'+rec.consensusIcon+" "+rec.consensus+"</span></div>"
-      +'<div class="rec-lbl">'+rec.label+" · "+rec.year+(rec.books?" · "+rec.books:"")+"</div></div></div>"
+      +'<div class="rec-lbl">'+(e.composer?e.composer+" · ":"")+(e.compositionYear?e.compositionYear+" · ":"")+rec.label+" · "+rec.year+(rec.books?" · "+rec.books:"")+"</div></div></div>"
       +'<div class="stars-row"><div class="star-b"><span class="star-l">ESEC.</span><span class="stars">'+st(rec.execStars)+"</span></div>"
       +'<div class="star-b"><span class="star-l">REG.</span><span class="stars">'+st(rec.recStars)+"</span></div></div>"
       +(rec.execNote||rec.recNote?'<div class="ngrid">'
