@@ -63,7 +63,7 @@ function saveQobuzToRec(lib,entryId,recRank,recInterpreter,url){
   return lib.map(function(e){
     if(e.id!==entryId)return e;
     return {...e,recordings:(e.recordings||[]).map(function(r){
-      if(r.rank!==recRank||r.interpreter!==recInterpreter)return r;
+      if(r.rank!==recRank)return r;
       if((r.qobuz||[]).some(function(q){return q.url===url;}))return r;
       return {...r,qobuz:[...(r.qobuz||[]),{label:"Ascolta",url:url}]};
     })};
@@ -92,24 +92,45 @@ function filterLib() {
   render(filtered);
 }
 
-function saveUrl(entryId, recRank, recInterpreter, fieldId) {
+function saveUrl(entryId, recRank, fieldId) {
   var inp = document.getElementById(fieldId);
   if(!inp) return;
   var raw = inp.value.trim();
   var m = raw.match(/https:\/\/open\.qobuz\.com\/album\/\w+/);
   var url = m ? m[0] : (raw.startsWith("http") ? raw : "");
   if(!url) return;
-  ALL_LIB = saveQobuzToRec(ALL_LIB, entryId, recRank, recInterpreter, url);
+  var entry = ALL_LIB.find(function(e){return e.id===entryId;});
+  if(!entry) return;
+  var rec = (entry.recordings||[]).find(function(r){return r.rank===recRank;});
+  if(!rec) return;
+  ALL_LIB = saveQobuzToRec(ALL_LIB, entryId, recRank, rec.interpreter, url);
   inp.value = "";
   ghPush(ALL_LIB);
   filterLib();
 }
 
+document.addEventListener('click', function(ev) {
+  var btn = ev.target.closest('.save-btn');
+  if(!btn) return;
+  saveUrl(btn.dataset.entry, parseInt(btn.dataset.rank), btn.dataset.field);
+});
+
 async function load() {
   try {
-    const r = await fetch('https://giovanniguazzarotti-spec.github.io/discografia/biblioteca.json?t='+Date.now());
-    if(!r.ok) throw new Error('File non trovato ('+r.status+')');
-    const lib = await r.json();
+    // Prova prima GitHub Pages (veloce), poi API GitHub (affidabile)
+    var lib = null;
+    try {
+      var r1 = await fetch('https://giovanniguazzarotti-spec.github.io/discografia/biblioteca.json?t='+Date.now());
+      if(r1.ok) lib = await r1.json();
+    } catch(e1) {}
+    if(!lib) {
+      var tok = ghTok();
+      var headers2 = tok ? ghHeaders() : {"User-Agent":"DiscografiaApp"};
+      var r2 = await fetch('https://api.github.com/repos/giovanniguazzarotti-spec/discografia/contents/biblioteca.json', {headers:headers2});
+      if(!r2.ok) throw new Error('File non trovato ('+r2.status+')');
+      var d2 = await r2.json();
+      lib = JSON.parse(atob(d2.content.replace(/\n/g,'')));
+    }
     ALL_LIB = lib;
     render(lib);
     
@@ -133,7 +154,7 @@ function render(lib) {
       const urlFieldId = "qu-"+e.id.slice(-6)+"-"+rec.rank;
       const urlField = '<span style="display:inline-flex;gap:4px;align-items:center;margin-top:4px">'
         +'<input id="'+urlFieldId+'" placeholder="URL Qobuz..." style="background:#0a0806;border:1px solid #4a8a4a;color:#f0ead6;padding:4px 7px;border-radius:4px;font-size:10px;outline:none;width:150px"/>'
-        +'<button onclick="saveUrl(''+e.id+'','+rec.rank+',''+rec.interpreter.replace(/'/g,"\'")+'',' +'''+urlFieldId+'')" style="background:#1a3a1a;border:1px solid #4a8a4a;color:#7acf9a;padding:4px 7px;border-radius:4px;font-size:10px;cursor:pointer">💾</button>'
+        +'<button class="save-btn" data-entry="'+e.id+'" data-rank="'+rec.rank+'" data-field="'+urlFieldId+'" style="background:#1a3a1a;border:1px solid #4a8a4a;color:#7acf9a;padding:4px 7px;border-radius:4px;font-size:10px;cursor:pointer">💾</button>'
         +'</span>';
       const rLinks = (rec.reviews||[]).filter(r=>r.url).map(r =>
         '<a class="btn-r" href="'+r.url+'" target="_blank" rel="noopener">📰 '+r.label+'</a>'
