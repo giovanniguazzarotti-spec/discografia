@@ -57,6 +57,7 @@ a.ba{background:#1a3a2a;border:1px solid #4a9a6a;color:#7acf9a;padding:4px 9px;b
 <div id="msg">✓ Salvato</div>
 <script>
 var ALL=[];
+function esc(s){if(!s)return"";return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 var REPO="giovanniguazzarotti-spec/discografia",GH="biblioteca.json";
 function tok(){try{return localStorage.getItem("cdc_gh_tok_v1")||"";}catch{return "";}}
 function hdr(){return{"Authorization":"token "+tok(),"Content-Type":"application/json","User-Agent":"DA"};}
@@ -132,11 +133,11 @@ function renderLib(lib){
       var wt=getWork(e);
       var recsHtml=buildRecs(e);
       html+='<div class="work-row" onclick="toggle(\''+e.id+'\')">'
-        +'<div class="work-top"><span class="work-title">'+wt+'</span><span class="work-arrow" id="a-'+e.id+'">▼</span></div>'
+        +'<div class="work-top"><span class="work-title">'+esc(wt)+'</span><span class="work-arrow" id="a-'+e.id+'">▼</span></div>'
         +'<div class="work-meta">'+(e.instrument&&e.instrument!=="n/d"&&e.instrument!=="—"?e.instrument+" · ":"")+( e.compositionYear?e.compositionYear+" · ":"")+( e.recordings||[]).length+" registrazioni</div>"
-        +(e.summary?'<div class="work-summary">'+e.summary+"</div>":"")
+        +(e.summary?'<div class="work-summary">'+esc(e.summary)+"</div>":"")
         +'<div class="recordings" id="r-'+e.id+'" onclick="event.stopPropagation()">'+recsHtml
-        +(e.recommendation?'<div class="reco"><div class="rl">💡 Consiglio finale</div>'+e.recommendation+"</div>":"")
+        +(e.recommendation?'<div class="reco"><div class="rl">💡 Consiglio finale</div>'+esc(e.recommendation)+"</div>":"")
         +"</div></div>";
     });
     html+="</div>";
@@ -152,15 +153,15 @@ function buildRecs(e){
     var rls=(rec.reviews||[]).filter(function(r){return r.url;}).map(function(r){return'<a class="br" href="'+r.url+'" target="_blank" rel="noopener">📰 '+r.label+"</a>";}).join("");
     return'<div class="rec">'
       +'<div class="rec-header"><div class="rec-rank">'+rec.rank+'</div>'
-      +'<div style="flex:1"><div><span class="rec-name">'+rec.interpreter+'</span><span class="rec-lvl">LIV.'+rec.level+'</span><span class="rec-cons" style="color:'+cc+'">'+rec.consensusIcon+" "+rec.consensus+"</span></div>"
-      +'<div class="rec-lbl">'+(e.composer&&e.composer!=="—"?e.composer+" · ":"")+(e.compositionYear&&e.compositionYear!=="—"?e.compositionYear+" · ":"")+rec.label+" · "+rec.year+(rec.books?" · "+rec.books:"")+"</div></div></div>"
+      +'<div style="flex:1"><div><span class="rec-name">'+esc(rec.interpreter)+'</span><span class="rec-lvl">LIV.'+esc(rec.level)+'</span><span class="rec-cons" style="color:'+cc+'">'+rec.consensusIcon+" "+esc(rec.consensus)+"</span></div>"
+      +'<div class="rec-lbl">'+(e.composer&&e.composer!=="—"?e.composer+" · ":"")+(e.compositionYear&&e.compositionYear!=="—"?e.compositionYear+" · ":"")+esc(rec.label)+" · "+esc(rec.year)+(rec.books?" · "+rec.books:"")+"</div></div></div>"
       +'<div class="stars-row"><div class="star-b"><span class="star-l">ESEC.</span><span class="stars">'+st(rec.execStars)+"</span></div>"
       +'<div class="star-b"><span class="star-l">REG.</span><span class="stars">'+st(rec.recStars)+"</span></div></div>"
       +(rec.execNote||rec.recNote?'<div class="ngrid">'
-        +(rec.execNote?'<div class="nbox"><div class="ntit">⭐ Esecuzione</div><div class="ntxt">'+rec.execNote+"</div></div>":"")
-        +(rec.recNote?'<div class="nbox"><div class="ntit">🎙️ Registrazione</div><div class="ntxt">'+rec.recNote+"</div></div>":"")
+        +(rec.execNote?'<div class="nbox"><div class="ntit">⭐ Esecuzione</div><div class="ntxt">'+esc(rec.execNote)+"</div></div>":"")
+        +(rec.recNote?'<div class="nbox"><div class="ntit">🎙️ Registrazione</div><div class="ntxt">'+esc(rec.recNote)+"</div></div>":"")
         +"</div>":"")
-      +(rec.criticalNote?'<div class="crit"><div class="ntit">📰 Critica</div><div class="ntxt">'+rec.criticalNote+"</div></div>":"")
+      +(rec.criticalNote?'<div class="crit"><div class="ntit">📰 Critica</div><div class="ntxt">'+esc(rec.criticalNote)+"</div></div>":"")
       +(rls?'<div class="btns2">'+rls+"</div>":"")
       +'<div class="btns"><a class="ba" href="https://open.qobuz.com/album/0060253780968" target="_blank" rel="noopener">📱 Qobuz</a>'
       +(fq?'<a class="bq" href="'+oq(fq.url)+'" target="_blank" rel="noopener,noreferrer">🎵 Ascolta</a>':"")
