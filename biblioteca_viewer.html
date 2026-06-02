@@ -191,7 +191,7 @@ async function load(){
       var r2=await fetch("https://api.github.com/repos/"+REPO+"/contents/"+GH,{headers:h});
       if(!r2.ok)throw new Error("File non trovato ("+r2.status+")");
       var d=await r2.json();
-      lib=JSON.parse(atob(d.content.replace(/\n/g,"")));
+      lib=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\n/g,"")))));
     }
     ALL=lib;
     document.getElementById("sub").textContent=lib.length+" guide salvate";
