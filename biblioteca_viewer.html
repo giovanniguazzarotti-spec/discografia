@@ -40,6 +40,36 @@ h1 { color:#c9a84c; font-weight:400; font-size:20px; margin-bottom:4px; }
 <div id="content"></div>
 
 <script>
+const REPO="giovanniguazzarotti-spec/discografia";
+const GH_FILE="biblioteca.json";
+function ghTok(){try{return localStorage.getItem("cdc_gh_tok_v1")||"";}catch{return "";}}
+function ghHeaders(){return{"Authorization":"token "+ghTok(),"Content-Type":"application/json","User-Agent":"DiscografiaApp"};}
+async function ghPush(lib){
+  var t=ghTok();if(!t)return;
+  try{
+    var sha="";
+    var r=await fetch("https://api.github.com/repos/"+REPO+"/contents/"+GH_FILE,{headers:ghHeaders()});
+    if(r.ok){var d=await r.json();sha=d.sha||"";}
+    var body={message:"Aggiorna biblioteca",content:btoa(unescape(encodeURIComponent(JSON.stringify(lib,null,0)))),branch:"main"};
+    if(sha)body.sha=sha;
+    await fetch("https://api.github.com/repos/"+REPO+"/contents/"+GH_FILE,{method:"PUT",headers:ghHeaders(),body:JSON.stringify(body)});
+  }catch(e){console.error(e);}
+}
+function toOpenQobuz(url){
+  if(!url)return null;
+  try{const u=new URL(url);const p=u.pathname.split("/").filter(Boolean);const id=p[p.length-1];return id?"https://open.qobuz.com/album/"+id:url;}catch{return url;}
+}
+function saveQobuzToRec(lib,entryId,recRank,recInterpreter,url){
+  return lib.map(function(e){
+    if(e.id!==entryId)return e;
+    return {...e,recordings:(e.recordings||[]).map(function(r){
+      if(r.rank!==recRank||r.interpreter!==recInterpreter)return r;
+      if((r.qobuz||[]).some(function(q){return q.url===url;}))return r;
+      return {...r,qobuz:[...(r.qobuz||[]),{label:"Ascolta",url:url}]};
+    })};
+  });
+}
+
 const C = {green:"#5a9e70",amber:"#c9a84c",red:"#c96060",muted:"#6a5f4a"};
 function stars(n) {
   return '★'.repeat(n||0) + '<span class="stars-empty">' + '★'.repeat(5-(n||0)) + '</span>';
@@ -60,6 +90,19 @@ function filterLib() {
   }) : ALL_LIB;
   document.getElementById('count').textContent = filtered.length + '/' + ALL_LIB.length + ' guide';
   render(filtered);
+}
+
+function saveUrl(entryId, recRank, recInterpreter, fieldId) {
+  var inp = document.getElementById(fieldId);
+  if(!inp) return;
+  var raw = inp.value.trim();
+  var m = raw.match(/https:\/\/open\.qobuz\.com\/album\/\w+/);
+  var url = m ? m[0] : (raw.startsWith("http") ? raw : "");
+  if(!url) return;
+  ALL_LIB = saveQobuzToRec(ALL_LIB, entryId, recRank, recInterpreter, url);
+  inp.value = "";
+  ghPush(ALL_LIB);
+  filterLib();
 }
 
 async function load() {
@@ -84,13 +127,18 @@ function render(lib) {
   el.innerHTML = lib.map((e,i) => {
     const recs = (e.recordings||[]).map(rec => {
       const cc = rec.consensusIcon==='🟢'?C.green:rec.consensusIcon==='🔴'?C.red:C.amber;
-      const qLinks = (rec.qobuz||[]).filter(q=>q.url).map(q => {
-        const url = toOpenQobuz(q.url);
-        return '<a class="btn-q" href="'+url+'" target="_blank" rel="noopener">🎵 '+q.label+'</a>';
-      }).join('');
+      const firstQobuz = (rec.qobuz||[]).find(q=>q.url&&toOpenQobuz(q.url));
+      const ascoltaBtn = firstQobuz ? '<a class="btn-q" href="'+toOpenQobuz(firstQobuz.url)+'" target="_blank" rel="noopener,noreferrer">🎵 Ascolta</a>' : '';
+      const qobuzBtn = '<a class="btn-q" href="https://open.qobuz.com/album/0060253780968" target="_blank" rel="noopener,noreferrer">📱 Qobuz</a>';
+      const urlFieldId = "qu-"+e.id.slice(-6)+"-"+rec.rank;
+      const urlField = '<span style="display:inline-flex;gap:4px;align-items:center;margin-top:4px">'
+        +'<input id="'+urlFieldId+'" placeholder="URL Qobuz..." style="background:#0a0806;border:1px solid #4a8a4a;color:#f0ead6;padding:4px 7px;border-radius:4px;font-size:10px;outline:none;width:150px"/>'
+        +'<button onclick="saveUrl(''+e.id+'','+rec.rank+',''+rec.interpreter.replace(/'/g,"\'")+'',' +'''+urlFieldId+'')" style="background:#1a3a1a;border:1px solid #4a8a4a;color:#7acf9a;padding:4px 7px;border-radius:4px;font-size:10px;cursor:pointer">💾</button>'
+        +'</span>';
       const rLinks = (rec.reviews||[]).filter(r=>r.url).map(r =>
         '<a class="btn-r" href="'+r.url+'" target="_blank" rel="noopener">📰 '+r.label+'</a>'
       ).join('');
+      const qLinks = qobuzBtn + ascoltaBtn;
       return '<div class="rec">'+
         '<div class="rec-header">'+
           '<span class="rank">'+rec.rank+'</span>'+
@@ -109,7 +157,7 @@ function render(lib) {
         '</div>'+
         (rec.execNote?'<div class="notes">'+rec.execNote+'</div>':'')+
         (rec.criticalNote?'<div class="critical">'+rec.criticalNote+'</div>':'')+
-        ((qLinks||rLinks)?'<div class="btns">'+qLinks+rLinks+'</div>':'')+
+        '<div class="btns">'+qLinks+(rLinks?rLinks:'')+urlField+'</div>'+
       '</div>';
     }).join('');
     return '<div class="entry">'+
