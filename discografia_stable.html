@@ -117,45 +117,42 @@ function exportLibrary(library, entries) {
   return lines.join("\n");
 }
 function importLibrary(file, onSuccess, onError) {
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      const guides = data.guides || (Array.isArray(data)?data:[]);
-      if(!guides.length) { onError("File vuoto o formato non riconosciuto."); return; }
-      onSuccess(guides);
-    } catch { onError("Errore nel leggere il file JSON."); }
-  };
-  reader.readAsText(file);
+ const reader = new FileReader();
+ reader.onload = e => {
+ try {
+ const data = JSON.parse(e.target.result);
+ const guides = data.guides || (Array.isArray(data)?data:[]);
+ if(!guides.length) { onError("File vuoto o formato non riconosciuto."); return; }
+ onSuccess(guides);
+ } catch { onError("Errore nel leggere il file JSON."); }
+ };
+ reader.readAsText(file);
 }
-
 // ── BUILTIN DATA ──────────────────────────────────────────────────────────────
 const BUILTIN = {
-  id:"builtin_bach_wtc", work:"J.S. Bach – Il Clavicembalo ben temperato (BWV 846–893)",
-  instrument:"Clavicembalo", savedAt:"Precaricato",
-  summary:"Le 48 coppie di preludi e fughe rappresentano una delle vette assolute della letteratura musicale occidentale.",
-  recommendation:"Per iniziare: Verlet per il suono d'epoca insuperabile, Suzuki (Masato) per la qualità Hi-Res moderna, Esfahani per la lettura più originale del 2025.",
-  recordings:[
-    {rank:1,level:"A",interpreter:"Blandine Verlet",label:"Naïve / Astrée",year:"1993",books:"I + II",consensus:"unanime",consensusIcon:"🟢",execStars:5,recStars:5,execNote:"Clavicembalo Hans Ruckers II del 1624 autentico. Interpretazione di rara forza emotiva e rigore storico.",recNote:"Tra le registrazioni sonicamente più belle del catalogo. Ruckers catturato splendidamente.",criticalNote:"ClassicsToday: reference recording assoluta. Unanime tra BBC Music e forum specialistici. Riserva minoritaria: rubato 'avventuroso'.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/ie-en/album/bach-le-clavier-bien-tempere-livre-i-clavecin-hans-ruckers-ii-1624-blandine-verlet/3298490085103"},{label:"Libro II",url:"https://www.qobuz.com/us-en/album/j-s-bach-le-clavier-bien-tempere-livre-ii-blandine-verlet/3298490085394"}],reviews:[{label:"ClassicsToday",url:"https://www.classicstoday.com/review/well-tempered-clavier-book-savor/"},{label:"BBC Music",url:"http://www.classical-music.com/review/bach-391"}]},
-    {rank:2,level:"A",interpreter:"Kenneth Gilbert",label:"Archiv / DG",year:"1983",books:"I + II",consensus:"unanime",consensusIcon:"🟢",execStars:5,recStars:3,execNote:"Sobrio, spontaneo, privo di manierismi. Clavicembalo fiammingo Couchet 1671.",recNote:"Digitale primo periodo: ravvicinato e lievemente compresso rispetto agli standard moderni.",criticalNote:"ClassicsToday: 'reference recording'. Unanime tra tutte le fonti. Limite: audio datato 1983.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/us-en/album/bach-the-well-tempered-clavier-i-kenneth-gilbert/0002894742212"}],reviews:[{label:"ClassicsToday",url:"https://www.classicstoday.com/review/reference-recording-kenneth-gilberts-well-tempered-clavier/"}]},
-    {rank:3,level:"A",interpreter:"Christine Schornsheim",label:"Capriccio / SWR2",year:"2011",books:"I + II",consensus:"unanime",consensusIcon:"🟢",execStars:5,recStars:5,execNote:"Equilibrio perfetto tra rigore e naturalezza. Ornamentazione sobria e fedele alle fonti.",recNote:"Clavicembalo Ruckers 1624 originale di Colmar. Forse il suono più bello di tutto il catalogo.",criticalNote:"Unanime tra ClassicsToday e ArkivMusic. Non disponibile su Qobuz — lacuna seria del catalogo.",qobuz:[],reviews:[{label:"ClassicsToday",url:"https://www.classicstoday.com/review/review-16311/"},{label:"ArkivMusic",url:"https://arkivmusic.com/products/bach-the-well-tempered-clavier-schornsheim-193411"}]},
-    {rank:4,level:"A",interpreter:"Masato Suzuki",label:"BIS",year:"2024–25",books:"I + II",consensus:"ampio e coerente",consensusIcon:"🟢",execStars:4,recStars:5,execNote:"Vivace, retoricamente convincente. Buon gusto infallibile.",recNote:"BIS Hi-Res a Toppan Hall Tokyo: qualità audio più alta in assoluto nel catalogo moderno.",criticalNote:"Gramophone: 'pleasurable benchmark'. The Guardian: 'Suzuki al suo meglio'.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/us-en/album/js-bach-the-well-tempered-clavier-book-1/ri4gahrgsnrac"}],reviews:[{label:"Gramophone",url:"https://www.gramophone.co.uk/reviews/js-bach-the-well-tempered-clavier-book-1-masato-suzuki"}]},
-    {rank:5,level:"B",interpreter:"Mahan Esfahani",label:"Hyperion",year:"2025",books:"Solo Libro I",consensus:"entusiasta, qualche riserva",consensusIcon:"🟡",execStars:5,recStars:4,execNote:"Filosofico, teatrale, profondamente personale. Il più originale del panorama attuale.",recNote:"Hyperion in chiesa a Loughton: ottima ma con lieve eco ambientale che divide i critici.",criticalNote:"Guardian ★★★★★. Gramophone entusiasta. The Classic Review: legato talvolta laborioso nel Preludio in do minore.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/us-en/album/bach-the-well-tempered-clavier-i-mahan-esfahani/pp7m9ij94edgb"}],reviews:[{label:"Gramophone",url:"https://www.gramophone.co.uk/reviews/js-bach-the-well-tempered-clavier-book-i-mahan-esfahani"},{label:"Guardian ★★★★★",url:"https://www.theguardian.com/music/2025/sep/05/bach-well-tempered-clavier-book-1-mahan-esfahani-review"},{label:"Classic Review",url:"https://theclassicreview.com/album-reviews/review-bach-the-well-tempered-clavier-book-1-mahan-esfahani-harpsichord/"}]},
-    {rank:6,level:"B",interpreter:"Gustav Leonhardt",label:"DHM",year:"1973",books:"I + II",consensus:"storico, audio divide",consensusIcon:"🟡",execStars:5,recStars:3,execNote:"Austera grandiosità, profondità musicologica senza paragoni. Cembalo Zell 1728.",recNote:"Registrazione del 1973: calda ma con limiti d'epoca inferiori a Verlet.",criticalNote:"BBC Music: 'nobile, privo di manierismi'. ClassicsToday loda. Verlet, stesso decennio, suona meglio.",qobuz:[{label:"Libri I+II",url:"https://www.qobuz.com/be-fr/album/bach-das-wohltemperierte-klavier-vol1-bwv-846-869-gustav-leonhardt/0035627701122"}],reviews:[{label:"BBC Music",url:"https://www.classical-music.com/features/recordings/best-recordings-js-bachs-well-tempered-clavier"}]},
-    {rank:7,level:"C",interpreter:"Andreas Staier",label:"Harmonia Mundi",year:"2020–23",books:"I + II",consensus:"diviso (II ottimo, I controverso)",consensusIcon:"🔴",execStars:4,recStars:3,execNote:"Potente e virtuosistico. Libro II unanime. Libro I troppo iperattivo per BBC Music.",recNote:"Teldex Berlino: nitido ma con eco calda e soffocante (BBC Music).",criticalNote:"HM definisce Libro II reference recording. BBC Music sul Libro I: 'iperattività precluda la bellezza'.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/us-en/album/js-bach-the-well-tempered-clavier-book-1-andreas-staier/akrq739gxmhfb"},{label:"Libro II",url:"https://www.qobuz.com/us-en/album/js-bach-the-well-tempered-clavier-book-2-andreas-staier/ce62h7y8sezlc"}],reviews:[{label:"Gramophone",url:"https://www.gramophone.co.uk/reviews/js-bach-the-well-tempered-clavier-book-1-andreas-staier"},{label:"BBC Music",url:"https://www.classical-music.com/reviews/instrumental/js-bach-the-well-tempered-clavier-book-i-staier"}]},
-    {rank:8,level:"C",interpreter:"Richard Egarr",label:"Harmonia Mundi",year:"2007",books:"Solo Libro I",consensus:"positivo con riserve",consensusIcon:"🟡",execStars:4,recStars:4,execNote:"Rubato generoso, temperamento storicamente accurato. Qualcuno lo trova troppo 'morbido'.",recNote:"Harmonia Mundi: qualità trasparente e ben bilanciata.",criticalNote:"Apprezzato per il temperamento storico. Alcuni: 'Soft Bach', articolazione meno incisiva di Gilbert o Verlet.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/us-en/album/bach-the-well-tempered-clavier-book-1-bwv-846-869-richard-egarr/0093046743123"}],reviews:[]},
-  ],
+ id:"builtin_bach_wtc", work:"J.S. Bach – Il Clavicembalo ben temperato (BWV 846–893)",
+ instrument:"Clavicembalo", savedAt:"Precaricato",
+ summary:"Le 48 coppie di preludi e fughe rappresentano una delle vette assolute della letteratura musicale occidentale.",
+ recommendation:"Per iniziare: Verlet per il suono d'epoca insuperabile, Suzuki (Masato) per la qualità Hi-Res moderna, Esfahani per la lettura più originale del 2025.",
+ recordings:[
+ {rank:1,level:"A",interpreter:"Blandine Verlet",label:"Naïve / Astrée",year:"1993",books:"I + II",consensus:"unanime",consensusIcon:"🟢",execStars:5,recStars:5,execNote:"Clavicembalo Hans Ruckers II del 1624 autentico. Interpretazione di rara forza emotiva e rigore storico.",recNote:"Tra le registrazioni sonicamente più belle del catalogo. Ruckers catturato splendidamente.",criticalNote:"ClassicsToday: reference recording assoluta. Unanime tra BBC Music e forum specialistici. Riserva minoritaria: rubato 'avventuroso'.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/ie-en/album/bach-le-clavier-bien-tempere-livre-i-clavecin-hans-ruckers-ii-1624-blandine-verlet/3298490085103"},{label:"Libro II",url:"https://www.qobuz.com/us-en/album/j-s-bach-le-clavier-bien-tempere-livre-ii-blandine-verlet/3298490085394"}],reviews:[{label:"ClassicsToday",url:"https://www.classicstoday.com/review/well-tempered-clavier-book-savor/"},{label:"BBC Music",url:"http://www.classical-music.com/review/bach-391"}]},
+ {rank:2,level:"A",interpreter:"Kenneth Gilbert",label:"Archiv / DG",year:"1983",books:"I + II",consensus:"unanime",consensusIcon:"🟢",execStars:5,recStars:3,execNote:"Sobrio, spontaneo, privo di manierismi. Clavicembalo fiammingo Couchet 1671.",recNote:"Digitale primo periodo: ravvicinato e lievemente compresso rispetto agli standard moderni.",criticalNote:"ClassicsToday: 'reference recording'. Unanime tra tutte le fonti. Limite: audio datato 1983.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/us-en/album/bach-the-well-tempered-clavier-i-kenneth-gilbert/0002894742212"}],reviews:[{label:"ClassicsToday",url:"https://www.classicstoday.com/review/reference-recording-kenneth-gilberts-well-tempered-clavier/"}]},
+ {rank:3,level:"A",interpreter:"Christine Schornsheim",label:"Capriccio / SWR2",year:"2011",books:"I + II",consensus:"unanime",consensusIcon:"🟢",execStars:5,recStars:5,execNote:"Equilibrio perfetto tra rigore e naturalezza. Ornamentazione sobria e fedele alle fonti.",recNote:"Clavicembalo Ruckers 1624 originale di Colmar. Forse il suono più bello di tutto il catalogo.",criticalNote:"Unanime tra ClassicsToday e ArkivMusic. Non disponibile su Qobuz — lacuna seria del catalogo.",qobuz:[],reviews:[{label:"ClassicsToday",url:"https://www.classicstoday.com/review/review-16311/"},{label:"ArkivMusic",url:"https://arkivmusic.com/products/bach-the-well-tempered-clavier-schornsheim-193411"}]},
+ {rank:4,level:"A",interpreter:"Masato Suzuki",label:"BIS",year:"2024–25",books:"I + II",consensus:"ampio e coerente",consensusIcon:"🟢",execStars:4,recStars:5,execNote:"Vivace, retoricamente convincente. Buon gusto infallibile.",recNote:"BIS Hi-Res a Toppan Hall Tokyo: qualità audio più alta in assoluto nel catalogo moderno.",criticalNote:"Gramophone: 'pleasurable benchmark'. The Guardian: 'Suzuki al suo meglio'.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/us-en/album/js-bach-the-well-tempered-clavier-book-1/ri4gahrgsnrac"}],reviews:[{label:"Gramophone",url:"https://www.gramophone.co.uk/reviews/js-bach-the-well-tempered-clavier-book-1-masato-suzuki"}]},
+ {rank:5,level:"B",interpreter:"Mahan Esfahani",label:"Hyperion",year:"2025",books:"Solo Libro I",consensus:"entusiasta, qualche riserva",consensusIcon:"🟡",execStars:5,recStars:4,execNote:"Filosofico, teatrale, profondamente personale. Il più originale del panorama attuale.",recNote:"Hyperion in chiesa a Loughton: ottima ma con lieve eco ambientale che divide i critici.",criticalNote:"Guardian ★★★★★. Gramophone entusiasta. The Classic Review: legato talvolta laborioso nel Preludio in do minore.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/us-en/album/bach-the-well-tempered-clavier-i-mahan-esfahani/pp7m9ij94edgb"}],reviews:[{label:"Gramophone",url:"https://www.gramophone.co.uk/reviews/js-bach-the-well-tempered-clavier-book-i-mahan-esfahani"},{label:"Guardian ★★★★★",url:"https://www.theguardian.com/music/2025/sep/05/bach-well-tempered-clavier-book-1-mahan-esfahani-review"},{label:"Classic Review",url:"https://theclassicreview.com/album-reviews/review-bach-the-well-tempered-clavier-book-1-mahan-esfahani-harpsichord/"}]},
+ {rank:6,level:"B",interpreter:"Gustav Leonhardt",label:"DHM",year:"1973",books:"I + II",consensus:"storico, audio divide",consensusIcon:"🟡",execStars:5,recStars:3,execNote:"Austera grandiosità, profondità musicologica senza paragoni. Cembalo Zell 1728.",recNote:"Registrazione del 1973: calda ma con limiti d'epoca inferiori a Verlet.",criticalNote:"BBC Music: 'nobile, privo di manierismi'. ClassicsToday loda. Verlet, stesso decennio, suona meglio.",qobuz:[{label:"Libri I+II",url:"https://www.qobuz.com/be-fr/album/bach-das-wohltemperierte-klavier-vol1-bwv-846-869-gustav-leonhardt/0035627701122"}],reviews:[{label:"BBC Music",url:"https://www.classical-music.com/features/recordings/best-recordings-js-bachs-well-tempered-clavier"}]},
+ {rank:7,level:"C",interpreter:"Andreas Staier",label:"Harmonia Mundi",year:"2020–23",books:"I + II",consensus:"diviso (II ottimo, I controverso)",consensusIcon:"🔴",execStars:4,recStars:3,execNote:"Potente e virtuosistico. Libro II unanime. Libro I troppo iperattivo per BBC Music.",recNote:"Teldex Berlino: nitido ma con eco calda e soffocante (BBC Music).",criticalNote:"HM definisce Libro II reference recording. BBC Music sul Libro I: 'iperattività precluda la bellezza'.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/us-en/album/js-bach-the-well-tempered-clavier-book-1-andreas-staier/akrq739gxmhfb"},{label:"Libro II",url:"https://www.qobuz.com/us-en/album/js-bach-the-well-tempered-clavier-book-2-andreas-staier/ce62h7y8sezlc"}],reviews:[{label:"Gramophone",url:"https://www.gramophone.co.uk/reviews/js-bach-the-well-tempered-clavier-book-1-andreas-staier"},{label:"BBC Music",url:"https://www.classical-music.com/reviews/instrumental/js-bach-the-well-tempered-clavier-book-i-staier"}]},
+ {rank:8,level:"C",interpreter:"Richard Egarr",label:"Harmonia Mundi",year:"2007",books:"Solo Libro I",consensus:"positivo con riserve",consensusIcon:"🟡",execStars:4,recStars:4,execNote:"Rubato generoso, temperamento storicamente accurato. Qualcuno lo trova troppo 'morbido'.",recNote:"Harmonia Mundi: qualità trasparente e ben bilanciata.",criticalNote:"Apprezzato per il temperamento storico. Alcuni: 'Soft Bach', articolazione meno incisiva di Gilbert o Verlet.",qobuz:[{label:"Libro I",url:"https://www.qobuz.com/us-en/album/bach-the-well-tempered-clavier-book-1-bwv-846-869-richard-egarr/0093046743123"}],reviews:[]},
+ ],
 };
-
 const SOURCES = [
-  {name:"Gramophone",url:"https://www.gramophone.co.uk",desc:"Rivista britannica di riferimento dal 1923"},
-  {name:"BBC Music Magazine",url:"https://www.classical-music.com",desc:"Mensile britannico con classifiche autorevoli"},
-  {name:"ClassicsToday",url:"https://www.classicstoday.com",desc:"Sito USA con voto su esecuzione e registrazione"},
-  {name:"The Guardian",url:"https://www.theguardian.com/music/classicalmusicandopera",desc:"Critica culturale di alto livello, UK"},
-  {name:"The Classic Review",url:"https://theclassicreview.com",desc:"Sito internazionale con recensioni approfondite"},
-  {name:"Limelight",url:"https://limelight-arts.com.au",desc:"Rivista australiana di musica classica"},
+ {name:"Gramophone",url:"https://www.gramophone.co.uk",desc:"Rivista britannica di riferimento dal 1923"},
+ {name:"BBC Music Magazine",url:"https://www.classical-music.com",desc:"Mensile britannico con classifiche autorevoli"},
+ {name:"ClassicsToday",url:"https://www.classicstoday.com",desc:"Sito USA con voto su esecuzione e registrazione"},
+ {name:"The Guardian",url:"https://www.theguardian.com/music/classicalmusicandopera",desc:"Critica culturale di alto livello, UK"},
+ {name:"The Classic Review",url:"https://theclassicreview.com",desc:"Sito internazionale con recensioni approfondite"},
+ {name:"Limelight",url:"https://limelight-arts.com.au",desc:"Rivista australiana di musica classica"},
 ];
-
 // ── SETUP SCREEN ──────────────────────────────────────────────────────────────
 function SetupScreen({onSave}) {
  const [key,setKey]=useState(""); const [show,setShow]=useState(false);
@@ -442,246 +439,225 @@ function SourcesPanel() {
 }
 // ── SEARCH PANEL ──────────────────────────────────────────────────────────────
 function OpenOpusSearch({onComposer,onWork,searchKey}) {
- const [q,setQ]=React.useState(""); const [res,setRes]=React.useState(null);
- const [load,setLoad]=React.useState(false); const [view,setView]=React.useState(null);
- const [pop,setPop]=React.useState([]);
- const FB=[[87,"Bach"],[145,"Beethoven"],[33,"Brahms"],[2,"Bruckner"],[196,"Chopin"],[56,"Debussy"],[43,"Dvořák"],[49,"Handel"],[53,"Haydn"],[60,"Liszt"],[64,"Mahler"],[72,"Mendelssohn"],[97,"Mozart"],[99,"Mussorgsky"],[107,"Prokofiev"],[110,"Rachmaninoff"],[111,"Ravel"],[116,"Saint-Saëns"],[104,"Schubert"],[129,"Schumann"],[138,"Shostakovich"],[141,"Sibelius"],[149,"Strauss R."],[155,"Stravinsky"],[159,"Tchaikovsky"],[172,"Verdi"],[175,"Vivaldi"],[181,"Wagner"]];
- React.useEffect(function(){setView(null);setRes(null);},[searchKey]);
- const go=async()=>{if(!q.trim())return;setLoad(true);try{var r=await fetch("https://api.openopus.org/composer/list/search/"+encodeURIComponent(q)+".json");var d=await r.json();setRes((d.composers||[]).map(function(x){return[+x.id,x.complete_name];}));setView("c");}catch(e){}finally{setLoad(false);}};
- const pop2=async()=>{if(pop.length){setView("p");return;}setLoad(true);try{var r=await fetch("https://api.openopus.org/composer/list/pop.json");var d=await r.json();var p=d.composers&&d.composers.length?d.composers.map(function(x){return[+x.id,x.complete_name];}):FB;setPop(p);setView("p");}catch(e){setPop(FB);setView("p");}finally{setLoad(false);}};
- const works=async(id,name)=>{onComposer&&onComposer(name);setLoad(true);try{var r=await fetch("https://api.openopus.org/work/list/composer/"+id+"/genre/all.json");var d=await r.json();setRes({n:name,w:d.works||[]});setView("w");}catch(e){setRes({n:name,w:[]});setView("w");}finally{setLoad(false);}};
- var lst=(view==="c"||view==="p")?(view==="c"?res:pop):null;
- return(<div style={{marginBottom:14}}>
- <div style={{display:"flex",gap:6,marginBottom:6}}>
- <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="Cerca compositore..." style={{flex:1,background:"#0a0806",border:"2px solid #8a7a60",color:"#fff",padding:"9px 10px",borderRadius:4,fontSize:13,outline:"none"}}/>
- <button onClick={pop2} style={{background:"transparent",border:"2px solid #8a7a60",color:C.gold,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>{load?"⏳":"☰"}</button>
- {view&&<button onClick={()=>{setView(null);setRes(null);setQ("");}} style={{background:"transparent",border:"2px solid #8a7a60",color:C.muted,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>×</button>}
- </div>
- <button onClick={go} disabled={load||!q.trim()} style={{width:"100%",background:q.trim()?C.gold:"#2a2520",color:q.trim()?"#000":"#555",border:"1px solid #c9a84c66",borderRadius:4,padding:"8px",fontSize:12,fontWeight:700,cursor:q.trim()?"pointer":"not-allowed",marginBottom:6}}>{load?"...":"🔎 Cerca"}</button>
- {lst&&lst.length>0&&(<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:6,padding:8,maxHeight:"40vh",overflowY:"auto"}}>
- {view==="p"&&<div style={{color:C.gold,fontSize:10,marginBottom:6}}>POPOLARI</div>}
- {lst.map(function(x){return(<div key={x[0]} onClick={function(){works(x[0],x[1]);}} style={{padding:"7px 8px",cursor:"pointer",borderBottom:"1px solid "+C.faint,color:C.cream,fontSize:13}}>{x[1]}</div>);})}
- </div>)}
- {view==="w"&&res&&(<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:6,padding:8,maxHeight:"45vh",overflowY:"auto"}}>
- <div style={{color:C.gold,fontSize:11,fontWeight:700,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
- <span>{res.n}</span><span style={{color:C.muted,fontSize:10,cursor:"pointer"}} onClick={()=>setView("c")}>←</span>
- </div>
- {res.w.map(function(w,i){return(<div key={i} onClick={function(){onWork&&onWork(w.title);}} style={{padding:"5px 0",borderBottom:"1px solid "+C.faint,display:"flex",justifyContent:"space-between",cursor:"pointer"}}><span style={{color:C.cream,fontSize:12}}>{w.title}</span><span style={{color:C.muted,fontSize:10}}>{w.genre}</span></div>);})}
- </div>)}
- </div>);
+const [q,setQ]=React.useState(""); const [res,setRes]=React.useState(null);
+const [load,setLoad]=React.useState(false); const [view,setView]=React.useState(null);
+const [pop,setPop]=React.useState([]);
+const FB=[[87,"Bach"],[145,"Beethoven"],[33,"Brahms"],[2,"Bruckner"],[196,"Chopin"],[56,"Debussy"],[43,"Dvořák"],[49,"Handel"],[53,"Haydn"],[60,"Liszt"],[64,"Mahler"],[72,"Mendelssohn"],[97,"Mozart"],[99,"Mussorgsky"],[107,"Prokofiev"],[110,"Rachmaninoff"],[111,"Ravel"],[116,"Saint-Saëns"],[104,"Schubert"],[129,"Schumann"],[138,"Shostakovich"],[141,"Sibelius"],[149,"Strauss R."],[155,"Stravinsky"],[159,"Tchaikovsky"],[172,"Verdi"],[175,"Vivaldi"],[181,"Wagner"]];
+React.useEffect(function(){setView(null);setRes(null);},[searchKey]);
+const go=async()=>{if(!q.trim())return;setLoad(true);try{var r=await fetch("https://api.openopus.org/composer/list/search/"+encodeURIComponent(q)+".json");var d=await r.json();setRes((d.composers||[]).map(function(x){return[+x.id,x.complete_name];}));setView("c");}catch(e){}finally{setLoad(false);}};
+const pop2=async()=>{if(pop.length){setView("p");return;}setLoad(true);try{var r=await fetch("https://api.openopus.org/composer/list/pop.json");var d=await r.json();var p=d.composers&&d.composers.length?d.composers.map(function(x){return[+x.id,x.complete_name];}):FB;setPop(p);setView("p");}catch(e){setPop(FB);setView("p");}finally{setLoad(false);}};
+const works=async(id,name)=>{onComposer&&onComposer(name);setLoad(true);try{var r=await fetch("https://api.openopus.org/work/list/composer/"+id+"/genre/all.json");var d=await r.json();setRes({n:name,w:d.works||[]});setView("w");}catch(e){setRes({n:name,w:[]});setView("w");}finally{setLoad(false);}};
+var lst=(view==="c"||view==="p")?(view==="c"?res:pop):null;
+return(<div style={{marginBottom:14}}>
+<div style={{display:"flex",gap:6,marginBottom:6}}>
+<input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="Cerca compositore..." style={{flex:1,background:"#0a0806",border:"2px solid #8a7a60",color:"#fff",padding:"9px 10px",borderRadius:4,fontSize:13,outline:"none"}}/>
+<button onClick={pop2} style={{background:"transparent",border:"2px solid #8a7a60",color:C.gold,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>{load?"⏳":"☰"}</button>
+{view&&<button onClick={()=>{setView(null);setRes(null);setQ("");}} style={{background:"transparent",border:"2px solid #8a7a60",color:C.muted,padding:"9px 10px",borderRadius:4,fontSize:12,cursor:"pointer"}}>×</button>}
+</div>
+<button onClick={go} disabled={load||!q.trim()} style={{width:"100%",background:q.trim()?C.gold:"#2a2520",color:q.trim()?"#000":"#555",border:"1px solid #c9a84c66",borderRadius:4,padding:"8px",fontSize:12,fontWeight:700,cursor:q.trim()?"pointer":"not-allowed",marginBottom:6}}>{load?"...":"🔎 Cerca"}</button>
+{lst&&lst.length>0&&(<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:6,padding:8,maxHeight:"40vh",overflowY:"auto"}}>
+{view==="p"&&<div style={{color:C.gold,fontSize:10,marginBottom:6}}>POPOLARI</div>}
+{lst.map(function(x){return(<div key={x[0]} onClick={function(){works(x[0],x[1]);}} style={{padding:"7px 8px",cursor:"pointer",borderBottom:"1px solid "+C.faint,color:C.cream,fontSize:13}}>{x[1]}</div>);})}
+</div>)}
+{view==="w"&&res&&(<div style={{background:C.bg2,border:"1px solid "+C.border,borderRadius:6,padding:8,maxHeight:"45vh",overflowY:"auto"}}>
+<div style={{color:C.gold,fontSize:11,fontWeight:700,marginBottom:6,display:"flex",justifyContent:"space-between"}}>
+<span>{res.n}</span><span style={{color:C.muted,fontSize:10,cursor:"pointer"}} onClick={()=>setView("c")}>←</span>
+</div>
+{res.w.map(function(w,i){return(<div key={i} onClick={function(){onWork&&onWork(w.title);}} style={{padding:"5px 0",borderBottom:"1px solid "+C.faint,display:"flex",justifyContent:"space-between",cursor:"pointer"}}><span style={{color:C.cream,fontSize:12}}>{w.title}</span><span style={{color:C.muted,fontSize:10}}>{w.genre}</span></div>);})}
+</div>)}
+</div>);
 }
 function SearchPanel({apiKey,onResults,onNeedKey,searchKey,onSearchStart}) {
-  const [composer,setComposer]=useState("");
-  const [work,setWork]=useState("");
-  const [instrument,setInstrument]=useState("");
-  const [loading,setLoading]=useState(false);
-  const [error,setError]=useState(null);
-
-  const search=async()=>{
-    if(!composer.trim()&&!work.trim())return;
-    if(!apiKey){onNeedKey();return;}
-    setLoading(true);setError(null);onSearchStart&&onSearchStart();
-    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless Gramophone/BBC/ClassicsToday/Guardian/ClassicReview/Limelight. qobuzUrl se noto.\nJSON: {\"work\":\"Compositore – Opera (es. Beethoven – Sinfonia n.9)\",\"compositionYear\":\"anno composizione\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"albumTitle\":\"x\",\"digitalEdition\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null,\"reviewUrls\":[{\"label\":\"x\",\"url\":\"https://x\"}]}]}";
-    try{
-      var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:4000,messages:[{role:"user",content:p}]})});
-      if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
-      var d=await r.json();var t=(d.content||[]).map(function(b){return b.text||"";}).join("");
-      var cl=t.replace(/```json|```/g,"").trim();var a=cl.indexOf("{"),b=cl.lastIndexOf("}");
-      if(a<0||b<0)throw new Error("Formato non valido.");
-      var jsonStr=cl.slice(a,b+1);
-      try{var parsed=JSON.parse(jsonStr);parsed._composer=composer;onResults(parsed);}
-      catch(e2){var p2=JSON.parse(jsonStr.replace(/,[^,]*$/,"")+"]}");p2._composer=composer;onResults(p2);}
-    }catch(e){setError(e.message||"Errore.");}
-    finally{setLoading(false);}
-  };
-
-  return (
-    <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:18,marginBottom:20}}>
-      <h3 style={{color:C.gold,margin:"0 0 14px",fontSize:13,letterSpacing:2,textTransform:"uppercase"}}>🔍 Cerca nuova opera</h3>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:9,marginBottom:14}}>
-        {[["Compositore",composer,setComposer,"es. Schubert…"],["Opera",work,setWork,"es. Winterreise…"],["Strumento",instrument,setInstrument,"es. pianoforte…"]].map(([l,v,s,p])=>(
-          <div key={l}>
-            <label style={{color:C.muted,fontSize:9,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:4}}>{l}</label>
-            <input value={v} onChange={e=>s(e.target.value)} placeholder={p} onKeyDown={e=>e.key==="Enter"&&search()}
-              style={{width:"100%",background:"#0a0806",border:`1px solid ${C.muted}`,color:C.cream,padding:"7px 9px",borderRadius:4,fontSize:12,outline:"none"}}/>
-          </div>
-        ))}
-      </div>
-      <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#666":"#0f0d09",border:"1px solid #c9a84c88",borderRadius:4,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:loading?"not-allowed":"pointer",marginTop:8,marginBottom:8}}>
-          {loading?<span>⏳ Ricerca in corso…</span>:"Cerca registrazioni"}
-        </button>
-        <OpenOpusSearch onComposer={setComposer} onWork={setWork} searchKey={searchKey}/>
-        {!apiKey&&<span style={{color:C.amber,fontSize:11}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
-      {error&&<p style={{color:C.red,fontSize:11,marginTop:8,marginBottom:0}}>{error}</p>}
-    </div>
-  );
+ const [composer,setComposer]=useState("");
+ const [work,setWork]=useState("");
+ const [instrument,setInstrument]=useState("");
+ const [loading,setLoading]=useState(false);
+ const [error,setError]=useState(null);
+ const search=async()=>{
+ if(!composer.trim()&&!work.trim())return;
+ if(!apiKey){onNeedKey();return;}
+ setLoading(true);setError(null);onSearchStart&&onSearchStart();
+ var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless Gramophone/BBC/ClassicsToday/Guardian/ClassicReview/Limelight. qobuzUrl se noto.\nJSON: {\"work\":\"Compositore – Opera (es. Beethoven – Sinfonia n.9)\",\"compositionYear\":\"anno composizione\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"albumTitle\":\"x\",\"digitalEdition\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null,\"reviewUrls\":[{\"label\":\"x\",\"url\":\"https://x\"}]}]}";
+ try{
+ var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:4000,messages:[{role:"user",content:p}]})});
+ if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
+ var d=await r.json();var t=(d.content||[]).map(function(b){return b.text||"";}).join("");
+ var cl=t.replace(/```json|```/g,"").trim();var a=cl.indexOf("{"),b=cl.lastIndexOf("}");
+ if(a<0||b<0)throw new Error("Formato non valido.");
+ var jsonStr=cl.slice(a,b+1);
+ try{var parsed=JSON.parse(jsonStr);parsed._composer=composer;onResults(parsed);}
+ catch(e2){var p2=JSON.parse(jsonStr.replace(/,[^,]*$/,"")+"]}");p2._composer=composer;onResults(p2);}
+ }catch(e){setError(e.message||"Errore.");}
+ finally{setLoading(false);}
+ };
+ return (
+ <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:18,marginBottom:20}}>
+ <h3 style={{color:C.gold,margin:"0 0 14px",fontSize:13,letterSpacing:2,textTransform:"uppercase"}}>🔍 Cerca nuova opera</h3>
+ <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:9,marginBottom:14}}>
+ {[["Compositore",composer,setComposer,"es. Schubert…"],["Opera",work,setWork,"es. Winterreise…"],["Strumento",instrument,setInstrument,"es. pianoforte…"]].map(([l,v,s,p])=>(
+ <div key={l}>
+ <label style={{color:C.muted,fontSize:9,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:4}}>{l}</label>
+ <input value={v} onChange={e=>s(e.target.value)} placeholder={p} onKeyDown={e=>e.key==="Enter"&&search()}
+ style={{width:"100%",background:"#0a0806",border:`1px solid ${C.muted}`,color:C.cream,padding:"7px 9px",borderRadius:4,fontSize:12,outline:"none"}}/>
+ </div>
+ ))}
+ </div>
+ <button onClick={search} disabled={loading||(!composer.trim()&&!work.trim())} style={{background:loading?"#2a2520":C.gold,color:loading?"#666":"#0f0d09",border:"1px solid #c9a84c88",borderRadius:4,padding:"8px 20px",fontSize:13,fontWeight:700,cursor:loading?"not-allowed":"pointer",marginTop:8,marginBottom:8}}>
+ {loading?<span>⏳ Ricerca in corso…</span>:"Cerca registrazioni"}
+ </button>
+ <OpenOpusSearch onComposer={setComposer} onWork={setWork} searchKey={searchKey}/>
+ {!apiKey&&<span style={{color:C.amber,fontSize:11}}>⚠️ Nessuna chiave API — <button onClick={onNeedKey} style={{background:"none",border:"none",color:C.gold,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0}}>configurala</button></span>}
+ {error&&<p style={{color:C.red,fontSize:11,marginTop:8,marginBottom:0}}>{error}</p>}
+ </div>
+ );
 }
-
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
 function App() {
-  const [apiKey,setApiKey]=useState(null);
-  const [showSetup,setShowSetup]=useState(false);
-  const [ghTok,setGhTok]=useState("");
-  const [searchKey,setSearchKey]=useState(0);
-  const [library,setLibrary]=useState([]);
-  const [active,setActive]=useState(null);
-  const [expanded,setExpanded]=useState(null);
-  const [showLib,setShowLib]=useState(false);
-  const [flash,setFlash]=useState(false);
-  const libraryRef=useRef([]);
-
-  useEffect(()=>{
-    const k=loadApiKey(); setApiKey(k); setShowSetup(!k);
-    var tok=window.GH.tok(); setGhTok(tok);
-    if(tok){
-      window.GH.load().then(function(ghLib){
-        var lib=ghLib&&ghLib.length?ghLib:loadLibrary();
-        setLibrary(lib);libraryRef.current=lib;
-      }).catch(function(){
-        var lib=loadLibrary();setLibrary(lib);libraryRef.current=lib;
-      });
-    } else {
-      var lib=loadLibrary();setLibrary(lib);libraryRef.current=lib;
-    }
-  },[]);
-
-  const handleSetup=k=>{saveApiKey(k);setApiKey(k);setShowSetup(false);};
-
-  const handleResults=useCallback(data=>{
-    const now=new Date().toLocaleDateString("it-IT",{day:"2-digit",month:"short",year:"numeric"});
-    const seenUrls=new Set();
-    const entry={...data,id:`s_${Date.now()}`,savedAt:now,
-      composer:data._composer||data.composer||(data.work||"").split(/[–—-]/)[0].trim()||"",
-      compositionYear:data.compositionYear||"",
-      recordings:(data.recordings||[]).map((r,i)=>{
-        const qobuz=[];
-        if(r.qobuzUrl&&r.qobuzUrl!=="null"&&typeof r.qobuzUrl==="string"&&r.qobuzUrl.startsWith("http")&&!seenUrls.has(r.qobuzUrl)){
-          seenUrls.add(r.qobuzUrl);
-          qobuz.push({label:"Ascolta",url:r.qobuzUrl});
-        }
-        return {
-          rank:r.rank||i+1,level:r.execStars>=5?"A":r.execStars>=4?"B":"C",
-          interpreter:r.interpreter||"—",label:r.label||"—",year:r.year||"—",books:r.books||"—",
-          consensus:r.consensus||"—",consensusIcon:r.consensusIcon||"🟡",
-          execStars:r.execStars||3,recStars:r.recStars||3,
-          execNote:r.execNote||"",recNote:r.recNote||"",criticalNote:r.criticalNote||"",albumTitle:r.albumTitle||"",digitalEdition:r.digitalEdition||"",
-          qobuz,reviews:(r.reviewUrls||[]).filter(function(x){return x&&x.url&&x.url.startsWith("http")&&!x.url.includes("...");}),
-        };
-      }),
-    };
-    setActive(entry);setExpanded(null);setSearchKey(function(k){return k+1;});
-    // Use ref to always have current library value, avoiding stale closure
-    const updated=saveLibrary([...libraryRef.current,entry]);
-    libraryRef.current=updated;
-    setLibrary(updated);setFlash(true);setTimeout(()=>setFlash(false),2500);
-    window.GH.push(updated);
-  },[]);
-
-  const handleSaveQobuz=function(rec,url){
-    if(!active||!active.recordings)return;
-    var upd={...active,recordings:active.recordings.map(function(r){if(r.rank!==rec.rank||r.interpreter!==rec.interpreter)return r;if((r.qobuz||[]).some(function(q){return q.url===url;}))return r;return {...r,qobuz:[...(r.qobuz||[]),{label:"Ascolta",url:url}]};})};setActive(upd);var lu=libraryRef.current.map(function(e){return e.id===upd.id?upd:e;});saveLibrary(lu);libraryRef.current=lu;setLibrary(lu);window.GH.push(lu);
-  };
-  const handleDelete=id=>{
-    const updated=saveLibrary(libraryRef.current.filter(e=>e.id!==id));
-    libraryRef.current=updated;
-    setLibrary(updated);if(active&&active.id===id)setActive(null);
-    window.GH.push(updated);
-  };
-
-  const handleImport=guides=>{
-    const merged=saveLibrary([...libraryRef.current,...guides.filter(g=>!libraryRef.current.find(e=>e.id===g.id))]);
-    libraryRef.current=merged;
-    setLibrary(merged);
-  };
-
-  if(showSetup) return <SetupScreen onSave={handleSetup}/>;
-  if(apiKey===null) return null;
-
-  const isBuiltin=!!(active&&active.id==="builtin_bach_wtc");
-
-  return (
-    <div style={{minHeight:"100vh",background:C.bg,color:C.cream,fontFamily:"'Palatino Linotype',Georgia,serif"}}>
-
-      {/* Header */}
-      <div style={{background:"linear-gradient(180deg,#1a1408 0%,#0f0d09 100%)",borderBottom:`1px solid ${C.border}`,padding:"14px 16px 12px"}}>
-        <div style={{maxWidth:880,margin:"0 auto"}}>
-          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{color:C.gold,fontSize:8,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Guida alle Registrazioni · Musica Classica</div>
-              <h1 style={{margin:0,fontSize:17,fontWeight:400,color:C.cream,lineHeight:1.2}}>Critica Discografica Specializzata</h1>
-              <p style={{color:C.muted,fontSize:9,margin:"4px 0 0",lineHeight:1.5}}>Gramophone · BBC Music · ClassicsToday · The Guardian · Limelight</p>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end",flexShrink:0}}>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
-                
-                <button onClick={()=>setShowLib(true)} style={{background:C.gold+"22",color:C.gold,border:`2px solid ${C.gold}`,borderRadius:5,padding:"5px 11px",fontSize:11,cursor:"pointer",whiteSpace:"nowrap"}}>
-                  📚 {library.length>0?`Biblioteca (${library.length})`:"Biblioteca"}
-                </button>
-              </div>
-              {flash&&<span className="flash" style={{color:C.green,fontSize:10}}>✓ Salvata</span>}
-              {apiKey&&<span onClick={()=>setShowSetup(true)} style={{color:"#4a8a5a",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",marginTop:6,display:"block"}}>🔑 API configurata</span>}
-              <span onClick={()=>{var t=prompt("GitHub Token:",ghTok);if(t!==null){window.GH.save(t);setGhTok(t);}}} style={{color:ghTok?"#4a8a5a":"#c9a84c",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",marginTop:4,display:"block"}}>{ghTok?"📂 GitHub conf.":"📂 GitHub..."}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{maxWidth:880,margin:"0 auto",padding:"22px 24px"}}>
-        <SearchPanel apiKey={apiKey} onResults={handleResults} onNeedKey={()=>setShowSetup(true)} searchKey={searchKey} onSearchStart={()=>setSearchKey(function(k){return k+1;})}/>
-        <SourcesPanel/>
-
-        {active&&<div>
-        {/* Results header */}
-        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14,gap:12}}>
-          <div style={{flex:1}}>
-            <div style={{color:C.gold,fontSize:11,letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>{isBuiltin?"Risultati precaricati":"Risultati ricerca"}</div>
-            <div style={{color:C.cream,fontSize:17,fontStyle:"italic",lineHeight:1.3}}>{active.work}</div>
-            {active.instrument&&<div style={{color:C.muted,fontSize:11,marginTop:2}}>{active.instrument}</div>}
-            {active.summary&&<div style={{color:C.mid,fontSize:11,marginTop:5,lineHeight:1.65,maxWidth:580}}>{active.summary}</div>}
-          </div>
-          <div style={{display:"flex",gap:8,flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
-            {!isBuiltin&&<button onClick={()=>{setActive(BUILTIN);setExpanded(null);}} style={{background:"transparent",border:`1px solid ${C.muted}`,color:C.muted,padding:"5px 11px",borderRadius:4,fontSize:11,cursor:"pointer"}}>← Bach / WTC</button>}
-            <button onClick={()=>generatePDF(active)} style={{background:"transparent",border:`1px solid ${C.gold}88`,color:C.goldDim,padding:"5px 11px",borderRadius:4,fontSize:11,cursor:"pointer"}} title="Scarica PDF">↓ PDF</button>
-          </div>
-        </div>
-
-        {/* Legend */}
-        <div style={{display:"flex",gap:14,marginBottom:12,flexWrap:"wrap"}}>
-          {[["🟢 Unanime",C.green],["🟡 Qualche riserva",C.amber],["🔴 Diviso",C.red]].map(([t,c])=>(
-            <span key={t} style={{color:c,fontSize:10}}>{t}</span>
-          ))}
-          <span style={{color:"#3a3a3a",fontSize:10,marginLeft:"auto"}}>▼ Clicca per espandere</span>
-        </div>
-
-        {(active.recordings||[]).map((rec,i)=>(
-          <Card key={i} rec={rec} expanded={expanded===i} onToggle={()=>setExpanded(expanded===i?null:i)} work={active.work} onSave={handleSaveQobuz}/>
-        ))}
-
-        {active.recommendation&&(
-          <div style={{background:C.bg2,border:`1px solid ${C.borderGold}`,borderRadius:6,padding:"12px 16px",marginTop:14}}>
-            <div style={{color:C.gold,fontSize:9,letterSpacing:2,textTransform:"uppercase",marginBottom:5}}>💡 Consiglio finale</div>
-            <p style={{color:C.mid,fontSize:12,margin:0,lineHeight:1.7}}>{active.recommendation}</p>
-          </div>
-        )}
-
-        </div>}
-        <div style={{borderTop:`1px solid ${C.bg3}`,marginTop:36,paddingTop:12,color:C.faint,fontSize:10}}>
-          Critica Discografica Specializzata · Maggio 2026 · Biblioteca salvata in questo browser · {library.length}/200 guide
-        </div>
-      </div>
-
-      {/* Library modal */}
-      {showLib&&<LibraryModal
-        library={library} activeId={active&&active.id}
-        onSelect={e=>{setActive(e);setExpanded(null);}}
-        onDelete={handleDelete}
-        onClose={()=>setShowLib(false)}
-        onExport={()=>exportLibrary(library)}
-      />}
-    </div>
-  );
+ const [apiKey,setApiKey]=useState(null);
+ const [showSetup,setShowSetup]=useState(false);
+ const [ghTok,setGhTok]=useState("");
+ const [searchKey,setSearchKey]=useState(0);
+ const [library,setLibrary]=useState([]);
+ const [active,setActive]=useState(null);
+ const [expanded,setExpanded]=useState(null);
+ const [showLib,setShowLib]=useState(false);
+ const [flash,setFlash]=useState(false);
+ const libraryRef=useRef([]);
+ useEffect(()=>{
+ const k=loadApiKey(); setApiKey(k); setShowSetup(!k);
+ var tok=window.GH.tok(); setGhTok(tok);
+ if(tok){
+ window.GH.load().then(function(ghLib){
+ var lib=ghLib&&ghLib.length?ghLib:loadLibrary();
+ setLibrary(lib);libraryRef.current=lib;
+ }).catch(function(){
+ var lib=loadLibrary();setLibrary(lib);libraryRef.current=lib;
+ });
+ } else {
+ var lib=loadLibrary();setLibrary(lib);libraryRef.current=lib;
+ }
+ },[]);
+ const handleSetup=k=>{saveApiKey(k);setApiKey(k);setShowSetup(false);};
+ const handleResults=useCallback(data=>{
+ const now=new Date().toLocaleDateString("it-IT",{day:"2-digit",month:"short",year:"numeric"});
+ const seenUrls=new Set();
+ const entry={...data,id:`s_${Date.now()}`,savedAt:now,
+ composer:data._composer||data.composer||(data.work||"").split(/[–—-]/)[0].trim()||"",
+ compositionYear:data.compositionYear||"",
+ recordings:(data.recordings||[]).map((r,i)=>{
+ const qobuz=[];
+ if(r.qobuzUrl&&r.qobuzUrl!=="null"&&typeof r.qobuzUrl==="string"&&r.qobuzUrl.startsWith("http")&&!seenUrls.has(r.qobuzUrl)){
+ seenUrls.add(r.qobuzUrl);
+ qobuz.push({label:"Ascolta",url:r.qobuzUrl});
+ }
+ return {
+ rank:r.rank||i+1,level:r.execStars>=5?"A":r.execStars>=4?"B":"C",
+ interpreter:r.interpreter||"—",label:r.label||"—",year:r.year||"—",books:r.books||"—",
+ consensus:r.consensus||"—",consensusIcon:r.consensusIcon||"🟡",
+ execStars:r.execStars||3,recStars:r.recStars||3,
+ execNote:r.execNote||"",recNote:r.recNote||"",criticalNote:r.criticalNote||"",albumTitle:r.albumTitle||"",digitalEdition:r.digitalEdition||"",
+ qobuz,reviews:(r.reviewUrls||[]).filter(function(x){return x&&x.url&&x.url.startsWith("http")&&!x.url.includes("...");}),
+ };
+ }),
+ };
+ setActive(entry);setExpanded(null);setSearchKey(function(k){return k+1;});
+ // Use ref to always have current library value, avoiding stale closure
+ const updated=saveLibrary([...libraryRef.current,entry]);
+ libraryRef.current=updated;
+ setLibrary(updated);setFlash(true);setTimeout(()=>setFlash(false),2500);
+ window.GH.push(updated);
+ },[]);
+ const handleSaveQobuz=function(rec,url){
+ if(!active||!active.recordings)return;
+ var upd={...active,recordings:active.recordings.map(function(r){if(r.rank!==rec.rank||r.interpreter!==rec.interpreter)return r;if((r.qobuz||[]).some(function(q){return q.url===url;}))return r;return {...r,qobuz:[...(r.qobuz||[]),{label:"Ascolta",url:url}]};})};setActive(upd);var lu=libraryRef.current.map(function(e){return e.id===upd.id?upd:e;});saveLibrary(lu);libraryRef.current=lu;setLibrary(lu);window.GH.push(lu);
+ };
+ const handleDelete=id=>{
+ const updated=saveLibrary(libraryRef.current.filter(e=>e.id!==id));
+ libraryRef.current=updated;
+ setLibrary(updated);if(active&&active.id===id)setActive(null);
+ window.GH.push(updated);
+ };
+ const handleImport=guides=>{
+ const merged=saveLibrary([...libraryRef.current,...guides.filter(g=>!libraryRef.current.find(e=>e.id===g.id))]);
+ libraryRef.current=merged;
+ setLibrary(merged);
+ };
+ if(showSetup) return <SetupScreen onSave={handleSetup}/>;
+ if(apiKey===null) return null;
+ const isBuiltin=!!(active&&active.id==="builtin_bach_wtc");
+ return (
+ <div style={{minHeight:"100vh",background:C.bg,color:C.cream,fontFamily:"'Palatino Linotype',Georgia,serif"}}>
+ {/* Header */}
+ <div style={{background:"linear-gradient(180deg,#1a1408 0%,#0f0d09 100%)",borderBottom:`1px solid ${C.border}`,padding:"14px 16px 12px"}}>
+ <div style={{maxWidth:880,margin:"0 auto"}}>
+ <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
+ <div style={{flex:1,minWidth:0}}>
+ <div style={{color:C.gold,fontSize:8,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Guida alle Registrazioni · Musica Classica</div>
+ <h1 style={{margin:0,fontSize:17,fontWeight:400,color:C.cream,lineHeight:1.2}}>Critica Discografica Specializzata</h1>
+ <p style={{color:C.muted,fontSize:9,margin:"4px 0 0",lineHeight:1.5}}>Gramophone · BBC Music · ClassicsToday · The Guardian · Limelight</p>
+ </div>
+ <div style={{display:"flex",flexDirection:"column",gap:6,alignItems:"flex-end",flexShrink:0}}>
+ <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+ <button onClick={()=>setShowLib(true)} style={{background:C.gold+"22",color:C.gold,border:`2px solid ${C.gold}`,borderRadius:5,padding:"5px 11px",fontSize:11,cursor:"pointer",whiteSpace:"nowrap"}}>
+ 📚 {library.length>0?`Biblioteca (${library.length})`:"Biblioteca"}
+ </button>
+ </div>
+ {flash&&<span className="flash" style={{color:C.green,fontSize:10}}>✓ Salvata</span>}
+ {apiKey&&<span onClick={()=>setShowSetup(true)} style={{color:"#4a8a5a",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",marginTop:6,display:"block"}}>🔑 API configurata</span>}
+ <span onClick={()=>{var t=prompt("GitHub Token:",ghTok);if(t!==null){window.GH.save(t);setGhTok(t);}}} style={{color:ghTok?"#4a8a5a":"#c9a84c",fontSize:10,cursor:"pointer",textDecoration:"underline dotted",marginTop:4,display:"block"}}>{ghTok?"📂 GitHub conf.":"📂 GitHub..."}</span>
+ </div>
+ </div>
+ </div>
+ </div>
+ <div style={{maxWidth:880,margin:"0 auto",padding:"22px 24px"}}>
+ <SearchPanel apiKey={apiKey} onResults={handleResults} onNeedKey={()=>setShowSetup(true)} searchKey={searchKey} onSearchStart={()=>setSearchKey(function(k){return k+1;})}/>
+ <SourcesPanel/>
+ {active&&<div>
+ {/* Results header */}
+ <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:14,gap:12}}>
+ <div style={{flex:1}}>
+ <div style={{color:C.gold,fontSize:11,letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>{isBuiltin?"Risultati precaricati":"Risultati ricerca"}</div>
+ <div style={{color:C.cream,fontSize:17,fontStyle:"italic",lineHeight:1.3}}>{active.work}</div>
+ {active.instrument&&<div style={{color:C.muted,fontSize:11,marginTop:2}}>{active.instrument}</div>}
+ {active.summary&&<div style={{color:C.mid,fontSize:11,marginTop:5,lineHeight:1.65,maxWidth:580}}>{active.summary}</div>}
+ </div>
+ <div style={{display:"flex",gap:8,flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
+ {!isBuiltin&&<button onClick={()=>{setActive(BUILTIN);setExpanded(null);}} style={{background:"transparent",border:`1px solid ${C.muted}`,color:C.muted,padding:"5px 11px",borderRadius:4,fontSize:11,cursor:"pointer"}}>← Bach / WTC</button>}
+ <button onClick={()=>generatePDF(active)} style={{background:"transparent",border:`1px solid ${C.gold}88`,color:C.goldDim,padding:"5px 11px",borderRadius:4,fontSize:11,cursor:"pointer"}} title="Scarica PDF">↓ PDF</button>
+ </div>
+ </div>
+ {/* Legend */}
+ <div style={{display:"flex",gap:14,marginBottom:12,flexWrap:"wrap"}}>
+ {[["🟢 Unanime",C.green],["🟡 Qualche riserva",C.amber],["🔴 Diviso",C.red]].map(([t,c])=>(
+ <span key={t} style={{color:c,fontSize:10}}>{t}</span>
+ ))}
+ <span style={{color:"#3a3a3a",fontSize:10,marginLeft:"auto"}}>▼ Clicca per espandere</span>
+ </div>
+ {(active.recordings||[]).map((rec,i)=>(
+ <Card key={i} rec={rec} expanded={expanded===i} onToggle={()=>setExpanded(expanded===i?null:i)} work={active.work} onSave={handleSaveQobuz}/>
+ ))}
+ {active.recommendation&&(
+ <div style={{background:C.bg2,border:`1px solid ${C.borderGold}`,borderRadius:6,padding:"12px 16px",marginTop:14}}>
+ <div style={{color:C.gold,fontSize:9,letterSpacing:2,textTransform:"uppercase",marginBottom:5}}>💡 Consiglio finale</div>
+ <p style={{color:C.mid,fontSize:12,margin:0,lineHeight:1.7}}>{active.recommendation}</p>
+ </div>
+ )}
+ </div>}
+ <div style={{borderTop:`1px solid ${C.bg3}`,marginTop:36,paddingTop:12,color:C.faint,fontSize:10}}>
+ Critica Discografica Specializzata · Maggio 2026 · Biblioteca salvata in questo browser · {library.length}/200 guide
+ </div>
+ </div>
+ {/* Library modal */}
+ {showLib&&<LibraryModal
+ library={library} activeId={active&&active.id}
+ onSelect={e=>{setActive(e);setExpanded(null);}}
+ onDelete={handleDelete}
+ onClose={()=>setShowLib(false)}
+ onExport={()=>exportLibrary(library)}
+ />}
+ </div>
+ );
 }
-
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
