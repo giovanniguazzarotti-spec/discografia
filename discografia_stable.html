@@ -204,64 +204,70 @@ function Stars({n,size=12}) {
 
 // ── RECORDING CARD ────────────────────────────────────────────────────────────
 function Card({rec,expanded,onToggle,work,onSave}) {
-  const lvlBg={A:C.cardA,B:C.cardB,C:C.cardC}[rec.level]||C.bg2;
-  const cc=rec.consensusIcon==="🟢"?C.green:rec.consensusIcon==="🔴"?C.red:C.amber;
-  return (
-    <div onClick={onToggle} style={{background:expanded?lvlBg:C.bg2,border:`1px solid ${expanded?C.gold+"66":C.border}`,borderRadius:6,marginBottom:8,cursor:"pointer",transition:"border-color 0.15s"}}>
-      <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10}}>
-        <span style={{color:C.gold,fontFamily:"Georgia",fontSize:20,fontWeight:700,minWidth:26}}>{rec.rank}</span>
-        <div style={{flex:1}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <span style={{color:C.cream,fontSize:15,fontWeight:600}}>{rec.interpreter}</span>
-            <span style={{background:C.faint,color:C.gold,fontSize:9,padding:"1px 6px",borderRadius:3,fontFamily:"monospace"}}>LIV.{rec.level}</span>
-            <span style={{color:cc,fontSize:11}}>{rec.consensusIcon} {rec.consensus}</span>
-          </div>
-          <div style={{color:C.muted,fontSize:11,marginTop:2}}>{rec.label} · {rec.year} · {rec.books}</div>
-
-        </div>
-        <div style={{display:"flex",gap:14}}>
-          {[["Esec.",rec.execStars],["Reg.",rec.recStars]].map(([l,n])=>(
-            <div key={l} style={{textAlign:"center"}}>
-              <div style={{color:C.muted,fontSize:8,letterSpacing:1,textTransform:"uppercase"}}>{l}</div>
-              <Stars n={n}/>
-            </div>
-          ))}
-        </div>
-        <span style={{color:C.gold,fontSize:14,marginLeft:4}}>{expanded?"▲":"▼"}</span>
-      </div>
-      {expanded&&(
-        <div style={{padding:"0 16px 16px",borderTop:`1px solid ${C.border}`}}>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:12}}>
-            {[["⭐ Esecuzione",rec.execNote,rec.execStars],["🎙️ Registrazione",rec.recNote,rec.recStars]].map(([l,note,n])=>(
-              <div key={l} style={{background:C.bg,borderRadius:4,padding:"9px 12px"}}>
-                <div style={{color:C.gold,fontSize:9,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>{l}</div>
-                <Stars n={n}/><p style={{color:C.mid,fontSize:11,margin:"5px 0 0",lineHeight:1.6}}>{note}</p>
-              </div>
-            ))}
-          </div>
-          <div style={{background:C.bg,borderRadius:4,padding:"9px 12px",marginTop:8}}>
-            <div style={{color:C.muted,fontSize:9,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>📰 Critica</div>
-            <p style={{color:C.mid,fontSize:11,margin:0,lineHeight:1.65}}>{rec.criticalNote}</p>
-          </div>
-          {(rec.reviews||[]).length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:8}}>
-            {(rec.reviews||[]).map((r,i)=>(<button key={i} onClick={e=>{e.stopPropagation();window.open(r.url,"_blank");}} style={{background:"#1a1f3a",border:"1px solid #4a5a9a",color:"#7a9acf",padding:"4px 10px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📰 {r.label}</button>))}
-          </div>}
-          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10,alignItems:"center"}}>
-            <button onClick={e=>{e.stopPropagation();window.open("https://open.qobuz.com/album/0060253780968","_blank","noopener,noreferrer");}} style={{background:"#1a3a2a",border:"1px solid #4a9a6a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📱 Qobuz</button>
-            {(rec.qobuz||[]).slice(0,1).filter(q=>q.url&&toOpenQobuz(q.url)).map((q,i)=>(
-              <button key={i} onClick={e=>{e.stopPropagation();window.open(toOpenQobuz(q.url),"_blank","noopener,noreferrer");}} style={{background:"#0e2a1a",border:"1px solid #3a8a50",color:"#4acf7a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>🎵 Ascolta</button>
-            ))}
-            {onSave&&<span onClick={e=>e.stopPropagation()} style={{display:"inline-flex",gap:4,alignItems:"center"}}><input id={"qu-"+rec.rank} placeholder="URL Qobuz..." style={{background:"#0a0806",border:"1px solid #4a8a4a",color:"#f0ead6",padding:"4px 7px",borderRadius:4,fontSize:10,outline:"none",width:150}}/><button onClick={e=>{e.stopPropagation();var inp=document.getElementById("qu-"+rec.rank);if(!inp)return;var raw=inp.value.trim();var m=raw.match(/https:\/\/open\.qobuz\.com\/album\/\w+/);var url=m?m[0]:(raw.startsWith("http")?raw:"");if(url){onSave(rec,url);inp.value=""}}} style={{background:"#1a3a1a",border:"1px solid #4a8a4a",color:"#7acf9a",padding:"4px 7px",borderRadius:4,fontSize:10,cursor:"pointer"}}>💾</button></span>}
-          </div>
-          {(rec.albumTitle||rec.digitalEdition)&&<div onClick={e=>{e.stopPropagation();var txt=[rec.interpreter,rec.albumTitle].filter(Boolean).join(" ");navigator.clipboard?navigator.clipboard.writeText(txt):window.prompt("Copia:",txt);}} style={{marginTop:8,padding:"6px 10px",background:"#0f1a2a",border:"1px solid #2a4a6a",borderRadius:4,color:"#8ab4d4",fontSize:10,cursor:"pointer",fontFamily:"monospace",display:"inline-block"}}>
-            {[rec.interpreter,rec.albumTitle].filter(Boolean).join(" ")} 📋
-          </div>}
-        </div>
-      )}
-    </div>
-  );
+ const lvlBg={A:C.cardA,B:C.cardB,C:C.cardC}[rec.level]||C.bg2;
+ const cc=rec.consensusIcon==="🟢"?C.green:rec.consensusIcon==="🔴"?C.red:C.amber;
+ return (
+ <div onClick={onToggle} style={{background:expanded?lvlBg:C.bg2,border:`1px solid ${expanded?C.gold+"66":C.border}`,borderRadius:6,marginBottom:8,cursor:"pointer",transition:"border-color 0.15s"}}>
+ <div style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:10}}>
+ <span style={{color:C.gold,fontFamily:"Georgia",fontSize:20,fontWeight:700,minWidth:26}}>{rec.rank}</span>
+ <div style={{flex:1}}>
+ <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+ <span style={{color:C.cream,fontSize:15,fontWeight:600}}>{rec.interpreter}</span>
+ <span style={{background:C.faint,color:C.gold,fontSize:9,padding:"1px 6px",borderRadius:3,fontFamily:"monospace"}}>LIV.{rec.level}</span>
+ <span style={{color:cc,fontSize:11}}>{rec.consensusIcon} {rec.consensus}</span>
+ </div>
+ <div style={{color:C.muted,fontSize:11,marginTop:2}}>{rec.label} · {rec.year} · {rec.books}</div>
+ </div>
+ <div style={{display:"flex",gap:14}}>
+ {[["Esec.",rec.execStars],["Reg.",rec.recStars]].map(([l,n])=>(
+ <div key={l} style={{textAlign:"center"}}>
+ <div style={{color:C.muted,fontSize:8,letterSpacing:1,textTransform:"uppercase"}}>{l}</div>
+ <Stars n={n}/>
+ </div>
+ ))}
+ </div>
+ <span style={{color:C.gold,fontSize:14,marginLeft:4}}>{expanded?"▲":"▼"}</span>
+ </div>
+ {expanded&&(
+ <div style={{padding:"0 16px 16px",borderTop:`1px solid ${C.border}`}}>
+ <div style={{display:"flex",gap:20,marginTop:12,marginBottom:10}}>
+ {[["⭐ Esecuzione",rec.execStars],["🎙️ Registrazione",rec.recStars]].map(([l,n])=>(
+ <div key={l} style={{display:"flex",alignItems:"center",gap:6}}>
+ <span style={{color:C.muted,fontSize:10}}>{l}</span>
+ <Stars n={n} size={13}/>
+ </div>
+ ))}
+ </div>
+ <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+ {[["⭐ Esecuzione",rec.execNote],["🎙️ Registrazione",rec.recNote]].map(([l,note])=>(
+ <div key={l} style={{background:C.bg,borderRadius:4,padding:"9px 12px"}}>
+ <div style={{color:C.gold,fontSize:9,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>{l}</div>
+ <p style={{color:C.mid,fontSize:11,margin:0,lineHeight:1.6}}>{note}</p>
+ </div>
+ ))}
+ </div>
+ <div style={{background:C.bg,borderRadius:4,padding:"9px 12px",marginTop:8}}>
+ <div style={{color:C.muted,fontSize:9,letterSpacing:1.5,textTransform:"uppercase",marginBottom:4}}>📰 Critica</div>
+ <p style={{color:C.mid,fontSize:11,margin:0,lineHeight:1.65}}>{rec.criticalNote}</p>
+ </div>
+ {(rec.reviews||[]).length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:8}}>
+ {(rec.reviews||[]).map((r,i)=>(<button key={i} onClick={e=>{e.stopPropagation();window.open(r.url,"_blank");}} style={{background:"#1a1f3a",border:"1px solid #4a5a9a",color:"#7a9acf",padding:"4px 10px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📰 {r.label}</button>))}
+ </div>}
+ <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:10,alignItems:"center"}}>
+ <button onClick={e=>{e.stopPropagation();window.open("https://open.qobuz.com/album/0060253780968","_blank","noopener,noreferrer");}} style={{background:"#1a3a2a",border:"1px solid #4a9a6a",color:"#7acf9a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>📱 Qobuz</button>
+ {(rec.qobuz||[]).slice(0,1).filter(q=>q.url&&toOpenQobuz(q.url)).map((q,i)=>(
+ <button key={i} onClick={e=>{e.stopPropagation();window.open(toOpenQobuz(q.url),"_blank","noopener,noreferrer");}} style={{background:"#0e2a1a",border:"1px solid #3a8a50",color:"#4acf7a",padding:"5px 11px",borderRadius:4,fontSize:10,cursor:"pointer"}}>🎵 Ascolta</button>
+ ))}
+ {onSave&&<span onClick={e=>e.stopPropagation()} style={{display:"inline-flex",gap:4,alignItems:"center"}}><input id={"qu-"+rec.rank} placeholder="URL Qobuz..." style={{background:"#0a0806",border:"1px solid #4a8a4a",color:"#f0ead6",padding:"4px 7px",borderRadius:4,fontSize:10,outline:"none",width:150}}/><button onClick={e=>{e.stopPropagation();var inp=document.getElementById("qu-"+rec.rank);if(!inp)return;var raw=inp.value.trim();var m=raw.match(/https:\/\/open\.qobuz\.com\/album\/\w+/);var url=m?m[0]:(raw.startsWith("http")?raw:"");if(url){onSave(rec,url);inp.value=""}}} style={{background:"#1a3a1a",border:"1px solid #4a8a4a",color:"#7acf9a",padding:"4px 7px",borderRadius:4,fontSize:10,cursor:"pointer"}}>💾</button></span>}
+ </div>
+ {(rec.albumTitle||rec.digitalEdition)&&<div onClick={e=>{e.stopPropagation();var txt=[rec.interpreter,rec.albumTitle].filter(Boolean).join(" ");navigator.clipboard?navigator.clipboard.writeText(txt):window.prompt("Copia:",txt);}} style={{marginTop:8,padding:"6px 10px",background:"#0f1a2a",border:"1px solid #2a4a6a",borderRadius:4,color:"#8ab4d4",fontSize:10,cursor:"pointer",fontFamily:"monospace",display:"inline-block"}}>
+ {[rec.interpreter,rec.albumTitle].filter(Boolean).join(" ")} 📋
+ </div>}
+ </div>
+ )}
+ </div>
+ );
 }
-
 // ── LIBRARY MODAL ─────────────────────────────────────────────────────────────
 function LibraryModal({library, activeId, onSelect, onDelete, onClose, onExport}) {
  const [search,setSearch]=useState("");
