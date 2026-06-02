@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biblioteca Discografica</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:#0f0d09; color:#f0ead6; font-family:'Palatino Linotype',Georgia,serif; padding:20px; max-width:880px; margin:0 auto; }
+h1 { color:#c9a84c; font-weight:400; font-size:20px; margin-bottom:4px; }
+.subtitle { color:#6a5f4a; font-size:11px; margin-bottom:24px; }
+.entry { background:#17140f; border:1px solid #2e2820; border-radius:8px; padding:16px; margin-bottom:16px; }
+.entry h2 { color:#f0ead6; font-size:15px; font-style:italic; margin-bottom:4px; }
+.entry .meta { color:#6a5f4a; font-size:11px; margin-bottom:10px; }
+.rec { background:#0f0d09; border:1px solid #2e2820; border-radius:6px; padding:10px 14px; margin-bottom:8px; }
+.rec-header { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.rank { color:#c9a84c; font-size:18px; font-weight:700; min-width:22px; font-family:Georgia; }
+.interpreter { color:#f0ead6; font-size:14px; font-weight:600; }
+.level { background:#3a3020; color:#c9a84c; font-size:9px; padding:1px 5px; border-radius:3px; font-family:monospace; }
+.consensus { font-size:11px; }
+.label { color:#6a5f4a; font-size:11px; margin-top:2px; }
+.stars { color:#c9a84c; font-size:11px; }
+.stars-empty { color:#3a3020; font-size:11px; }
+.notes { color:#9a8e7a; font-size:11px; margin-top:6px; line-height:1.6; }
+.critical { color:#9a8e7a; font-size:11px; margin-top:4px; line-height:1.6; background:#0a0806; padding:6px 10px; border-radius:4px; }
+.btns { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.btn-q { background:#0e2a1a; border:1px solid #3a8a50; color:#4acf7a; padding:4px 10px; border-radius:4px; font-size:10px; cursor:pointer; text-decoration:none; display:inline-block; }
+.btn-r { background:#1a1f3a; border:1px solid #4a5a9a; color:#7a9acf; padding:4px 10px; border-radius:4px; font-size:10px; cursor:pointer; text-decoration:none; display:inline-block; }
+.recommendation { background:#17140f; border:1px solid #c9a84c44; border-radius:6px; padding:10px 14px; margin-top:8px; color:#9a8e7a; font-size:12px; line-height:1.7; }
+.rec-label { color:#c9a84c; font-size:9px; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px; }
+#loading { color:#6a5f4a; text-align:center; padding:40px; }
+#error { color:#c96060; padding:20px; }
+</style>
+</head>
+<body>
+<h1>📚 Biblioteca Discografica</h1>
+<p class="subtitle">Caricata da GitHub · <span id="count"></span></p>
+<input id="search" placeholder="Cerca compositore, opera, interprete..." oninput="filterLib()" style="width:100%;background:#17140f;border:1px solid #2e2820;color:#f0ead6;padding:10px 14px;border-radius:6px;font-size:13px;outline:none;margin-bottom:16px;font-family:inherit"/>
+<div id="loading">Caricamento biblioteca...</div>
+<div id="content"></div>
+
+<script>
+const C = {green:"#5a9e70",amber:"#c9a84c",red:"#c96060",muted:"#6a5f4a"};
+function stars(n) {
+  return '★'.repeat(n||0) + '<span class="stars-empty">' + '★'.repeat(5-(n||0)) + '</span>';
+}
+function toOpenQobuz(url) {
+  if(!url) return null;
+  try { const u=new URL(url); const p=u.pathname.split('/').filter(Boolean); const id=p[p.length-1]; return id?'https://open.qobuz.com/album/'+id:url; } catch{return url;}
+}
+
+var ALL_LIB = [];
+
+function filterLib() {
+  var q = document.getElementById('search').value.toLowerCase().trim();
+  var filtered = q ? ALL_LIB.filter(function(e){
+    return (e.work||'').toLowerCase().includes(q)
+      || (e.instrument||'').toLowerCase().includes(q)
+      || (e.recordings||[]).some(function(r){ return (r.interpreter||'').toLowerCase().includes(q); });
+  }) : ALL_LIB;
+  document.getElementById('count').textContent = filtered.length + '/' + ALL_LIB.length + ' guide';
+  render(filtered);
+}
+
+async function load() {
+  try {
+    const r = await fetch('https://giovanniguazzarotti-spec.github.io/discografia/biblioteca.json?t='+Date.now());
+    if(!r.ok) throw new Error('File non trovato ('+r.status+')');
+    const lib = await r.json();
+    ALL_LIB = lib;
+    render(lib);
+    
+  } catch(e) {
+    document.getElementById('loading').style.display='none';
+    document.getElementById('content').innerHTML = '<div id="error">Errore: '+e.message+'<br><small>Assicurati di aver salvato almeno una ricerca nell\'app principale.</small></div>';
+  }
+}
+
+function render(lib) {
+  document.getElementById('loading').style.display='none';
+  document.getElementById('count').textContent = lib.length + ' guide salvate';
+  const el = document.getElementById('content');
+  if(!lib.length) { el.innerHTML='<div style="color:#6a5f4a;padding:40px;text-align:center">Nessuna guida salvata.</div>'; return; }
+  el.innerHTML = lib.map((e,i) => {
+    const recs = (e.recordings||[]).map(rec => {
+      const cc = rec.consensusIcon==='🟢'?C.green:rec.consensusIcon==='🔴'?C.red:C.amber;
+      const qLinks = (rec.qobuz||[]).filter(q=>q.url).map(q => {
+        const url = toOpenQobuz(q.url);
+        return '<a class="btn-q" href="'+url+'" target="_blank" rel="noopener">🎵 '+q.label+'</a>';
+      }).join('');
+      const rLinks = (rec.reviews||[]).filter(r=>r.url).map(r =>
+        '<a class="btn-r" href="'+r.url+'" target="_blank" rel="noopener">📰 '+r.label+'</a>'
+      ).join('');
+      return '<div class="rec">'+
+        '<div class="rec-header">'+
+          '<span class="rank">'+rec.rank+'</span>'+
+          '<div style="flex:1">'+
+            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+              '<span class="interpreter">'+rec.interpreter+'</span>'+
+              '<span class="level">LIV.'+rec.level+'</span>'+
+              '<span class="consensus" style="color:'+cc+'">'+rec.consensusIcon+' '+rec.consensus+'</span>'+
+            '</div>'+
+            '<div class="label">'+rec.label+' · '+rec.year+(rec.books?' · '+rec.books:'')+'</div>'+
+          '</div>'+
+          '<div style="display:flex;gap:12px">'+
+            '<div style="text-align:center"><div style="color:#6a5f4a;font-size:8px;letter-spacing:1px">ESEC.</div><span class="stars">'+stars(rec.execStars)+'</span></div>'+
+            '<div style="text-align:center"><div style="color:#6a5f4a;font-size:8px;letter-spacing:1px">REG.</div><span class="stars">'+stars(rec.recStars)+'</span></div>'+
+          '</div>'+
+        '</div>'+
+        (rec.execNote?'<div class="notes">'+rec.execNote+'</div>':'')+
+        (rec.criticalNote?'<div class="critical">'+rec.criticalNote+'</div>':'')+
+        ((qLinks||rLinks)?'<div class="btns">'+qLinks+rLinks+'</div>':'')+
+      '</div>';
+    }).join('');
+    return '<div class="entry">'+
+      '<h2>'+(i+1)+'. '+e.work+'</h2>'+
+      '<div class="meta">'+(e.instrument?e.instrument+' · ':'')+e.savedAt+'</div>'+
+      (e.summary?'<p style="color:#9a8e7a;font-size:12px;line-height:1.65;margin-bottom:10px">'+e.summary+'</p>':'')+
+      recs+
+      (e.recommendation?'<div class="recommendation"><div class="rec-label">💡 Consiglio finale</div>'+e.recommendation+'</div>':'')+
+    '</div>';
+  }).join('');
+}
+
+load();
+</script>
+</body>
+</html>
