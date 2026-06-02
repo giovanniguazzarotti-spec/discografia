@@ -481,7 +481,7 @@ function SearchPanel({apiKey,onResults,onNeedKey,searchKey,onSearchStart}) {
     if(!composer.trim()&&!work.trim())return;
     if(!apiKey){onNeedKey();return;}
     setLoading(true);setError(null);onSearchStart&&onSearchStart();
-    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless Gramophone/BBC/ClassicsToday/Guardian/ClassicReview/Limelight. qobuzUrl se noto.\nJSON: {\"work\":\"Compositore – Opera (es. Beethoven – Sinfonia n.9)\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"albumTitle\":\"x\",\"digitalEdition\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null,\"reviewUrls\":[{\"label\":\"x\",\"url\":\"https://x\"}]}]}";
+    var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless Gramophone/BBC/ClassicsToday/Guardian/ClassicReview/Limelight. qobuzUrl se noto.\nJSON: {\"work\":\"Compositore – Opera (es. Beethoven – Sinfonia n.9)\",\"compositionYear\":\"anno composizione\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"albumTitle\":\"x\",\"digitalEdition\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null,\"reviewUrls\":[{\"label\":\"x\",\"url\":\"https://x\"}]}]}";
     try{
       var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:4000,messages:[{role:"user",content:p}]})});
       if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
@@ -489,8 +489,8 @@ function SearchPanel({apiKey,onResults,onNeedKey,searchKey,onSearchStart}) {
       var cl=t.replace(/```json|```/g,"").trim();var a=cl.indexOf("{"),b=cl.lastIndexOf("}");
       if(a<0||b<0)throw new Error("Formato non valido.");
       var jsonStr=cl.slice(a,b+1);
-      try{onResults(JSON.parse(jsonStr));}
-      catch(e2){onResults(JSON.parse(jsonStr.replace(/,[^,]*$/,"")+"]}"));}
+      try{var parsed=JSON.parse(jsonStr);parsed._composer=composer;onResults(parsed);}
+      catch(e2){var p2=JSON.parse(jsonStr.replace(/,[^,]*$/,"")+"]}");p2._composer=composer;onResults(p2);}
     }catch(e){setError(e.message||"Errore.");}
     finally{setLoading(false);}
   };
@@ -551,7 +551,8 @@ function App() {
     const now=new Date().toLocaleDateString("it-IT",{day:"2-digit",month:"short",year:"numeric"});
     const seenUrls=new Set();
     const entry={...data,id:`s_${Date.now()}`,savedAt:now,
-      composer:data.composer||(data.work||"").split(/[–—-]/)[0].trim()||"",
+      composer:data._composer||data.composer||(data.work||"").split(/[–—-]/)[0].trim()||"",
+      compositionYear:data.compositionYear||"",
       recordings:(data.recordings||[]).map((r,i)=>{
         const qobuz=[];
         if(r.qobuzUrl&&r.qobuzUrl!=="null"&&typeof r.qobuzUrl==="string"&&r.qobuzUrl.startsWith("http")&&!seenUrls.has(r.qobuzUrl)){
