@@ -178,7 +178,7 @@ function render(lib) {
         '</div>'+
         (rec.execNote?'<div class="notes">'+rec.execNote+'</div>':'')+
         (rec.criticalNote?'<div class="critical">'+rec.criticalNote+'</div>':'')+
-        '<div class="btns">'+qLinks+(rLinks?rLinks:'')+urlField+'</div>'+
+        '<div class="btns">'+qLinks+urlField+'</div>'+(rLinks?'<div class="btns" style="margin-top:4px">'+rLinks+'</div>':'')+
       '</div>';
     }).join('');
     return '<div class="entry">'+
