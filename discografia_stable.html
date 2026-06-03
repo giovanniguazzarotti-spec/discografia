@@ -162,7 +162,7 @@ function SetupScreen({onSave}) {
  <div style={{textAlign:"center",marginBottom:32}}>
  <div style={{color:C.gold,fontSize:10,letterSpacing:3,textTransform:"uppercase",marginBottom:12}}>Critica Discografica Specializzata</div>
  <h1 style={{color:C.cream,fontWeight:400,fontSize:26,marginBottom:8}}>Configurazione chiave API</h1>
- <p style={{color:C.mid,fontSize:13,lineHeight:1.7}}>Per usare la ricerca AI inserisci la tua chiave API Anthropic.<br/>Puoi usare l'app anche senza — i dati Bach precaricati sono sempre disponibili.</p>
+ <p style={{color:C.mid,fontSize:13,lineHeight:1.7}}>Inserisci la chiave API Anthropic per la ricerca AI.</p>
  </div>
  <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:24,marginBottom:16}}>
  <label style={{color:C.muted,fontSize:10,letterSpacing:1.5,textTransform:"uppercase",display:"block",marginBottom:8}}>Chiave API Anthropic</label>
@@ -173,8 +173,8 @@ function SetupScreen({onSave}) {
  <button onClick={()=>setShow(!show)} style={{background:"transparent",border:`1px solid ${C.muted}`,color:C.muted,padding:"0 12px",borderRadius:4,fontSize:12,cursor:"pointer"}}>{show?"Nascondi":"Mostra"}</button>
  </div>
  <div style={{display:"flex",gap:10}}>
- <button onClick={()=>key.trim()&&onSave(key.trim())} disabled={!key.trim()} style={{flex:1,background:key.trim()?C.gold:"#2a2520",color:key.trim()?"#0f0d09":"#555",border:"none",borderRadius:4,padding:"10px",fontSize:14,fontWeight:700,cursor:key.trim()?"pointer":"not-allowed"}}>Salva e apri l'app</button>
- <button onClick={()=>onSave("")} style={{background:"transparent",border:`1px solid ${C.muted}`,color:C.muted,padding:"10px 16px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Salta (solo Bach)</button>
+ <button onClick={()=>key.trim()&&onSave(key.trim())} disabled={!key.trim()} style={{flex:1,background:key.trim()?C.gold:"#2a2520",color:key.trim()?"#0f0d09":"#555",border:"none",borderRadius:4,padding:"10px",fontSize:14,fontWeight:700,cursor:key.trim()?"pointer":"not-allowed"}}>Salva</button>
+ <button onClick={()=>onSave("")} style={{background:"transparent",border:`1px solid ${C.muted}`,color:C.muted,padding:"10px 16px",borderRadius:4,fontSize:12,cursor:"pointer"}}>Salta</button>
  </div>
  </div>
  <div style={{background:"#0f1a0f",border:"1px solid #1a3a1a",borderRadius:8,padding:20}}>
@@ -196,9 +196,8 @@ function SetupScreen({onSave}) {
 }
 // ── STARS ─────────────────────────────────────────────────────────────────────
 function Stars({n,size=12}) {
-  return <span>{Array.from({length:5},(_,i)=><span key={i} style={{color:i<n?C.gold:C.faint,fontSize:size}}>★</span>)}</span>;
+ return <span>{Array.from({length:5},(_,i)=><span key={i} style={{color:i<n?C.gold:C.faint,fontSize:size}}>★</span>)}</span>;
 }
-
 // ── RECORDING CARD ────────────────────────────────────────────────────────────
 function Card({rec,expanded,onToggle,work,onSave}) {
  const lvlBg={A:C.cardA,B:C.cardB,C:C.cardC}[rec.level]||C.bg2;
@@ -473,11 +472,24 @@ function SearchPanel({apiKey,onResults,onNeedKey,searchKey,onSearchStart}) {
  const [instrument,setInstrument]=useState("");
  const [loading,setLoading]=useState(false);
  const [error,setError]=useState(null);
+ const doSearch=async(n)=>{
+ try{
+  var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:4000,messages:[{role:"user",content:window._sp}]})});
+  if(!r.ok){var er=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit.");throw new Error((er.error&&er.error.message)||"Errore "+r.status);}
+  var d=await r.json();var t=(d.content||[]).map(function(b){return b.text||"";}).join("");
+  var cl=t.replace(/```json|```/g,"").trim();var a=cl.indexOf("{"),b=cl.lastIndexOf("}");
+  if(a<0||b<0)throw new Error("Formato non valido.");
+  var parsed=JSON.parse(cl.slice(a,b+1));parsed._composer=window._sc;onResults(parsed);setLoading(false);
+ }catch(ex){
+  if((n||0)<2&&ex.message!=="Chiave non valida."&&ex.message!=="Rate limit."){doSearch((n||0)+1);return;}
+  setError(ex.message||"Errore.");setLoading(false);
+ }
+};
  const search=async()=>{
  if(!composer.trim()&&!work.trim())return;
  if(!apiKey){onNeedKey();return;}
  setLoading(true);setError(null);onSearchStart&&onSearchStart();
- var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless Gramophone/BBC/ClassicsToday/Guardian/ClassicReview/Limelight. qobuzUrl se noto.\nJSON: {\"work\":\"Compositore – Opera (es. Beethoven – Sinfonia n.9)\",\"compositionYear\":\"anno composizione\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"books\":\"x\",\"albumTitle\":\"x\",\"digitalEdition\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null,\"reviewUrls\":[{\"label\":\"x\",\"url\":\"https://x\"}]}]}";
+ var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless Gramophone/BBC/ClassicsToday/Guardian. qobuzUrl se noto. compositionYear=anno composizione.\nJSON: {\"work\":\"Compositore – Opera\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"albumTitle\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null}]}";
  try{
  var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:4000,messages:[{role:"user",content:p}]})});
  if(!r.ok){var e=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit.");throw new Error((e.error&&e.error.message)||"Errore "+r.status);}
