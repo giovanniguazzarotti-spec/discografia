@@ -150,10 +150,10 @@ function buildRecs(e){
     var cc=rec.consensusIcon==="🟢"?"#5a9e70":rec.consensusIcon==="🔴"?"#c96060":"#c9a84c";
     var uid=e.id.slice(-5)+rec.rank;
     var fq=(rec.qobuz||[]).find(function(q){return q.url&&oq(q.url);});
-    var rls=(rec.reviews||[]).filter(function(r){return r.url;}).map(function(r){return'<a class="br" href="'+r.url+'" target="_blank" rel="noopener">📰 '+r.label+"</a>";}).join("");
+    var rls=(rec.reviews||[]).filter(function(r){return r.url;}).map(function(r){return'<a class="br" href="'+r.url+'" target="_blank" rel="noopener">📰 '+esc(r.label)+"</a>";}).join("");
     return'<div class="rec">'
       +'<div class="rec-header"><div class="rec-rank">'+rec.rank+'</div>'
-      +'<div style="flex:1"><div><span class="rec-name">'+esc(rec.interpreter)+'</span><span class="rec-lvl">LIV.'+esc(rec.level)+'</span><span class="rec-cons" style="color:'+cc+'">'+rec.consensusIcon+" "+esc(rec.consensus)+"</span></div>"
+      +'<div style="flex:1"><div><span class="rec-name">'+esc(rec.interpreter)+'</span><span class="rec-lvl">LIV.'+esc(rec.level)+'</span><span class="rec-cons" style="color:'+cc+'">'+esc(rec.consensusIcon)+" "+esc(rec.consensus)+"</span></div>"
       +'<div class="rec-lbl">'+(e.composer&&e.composer!=="—"?e.composer+" · ":"")+(e.compositionYear&&e.compositionYear!=="—"?e.compositionYear+" · ":"")+esc(rec.label)+" · "+esc(rec.year)+(rec.books?" · "+rec.books:"")+"</div></div></div>"
       +'<div class="stars-row"><div class="star-b"><span class="star-l">ESEC.</span><span class="stars">'+st(rec.execStars)+"</span></div>"
       +'<div class="star-b"><span class="star-l">REG.</span><span class="stars">'+st(rec.recStars)+"</span></div></div>"
