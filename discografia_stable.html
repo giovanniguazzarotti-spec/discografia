@@ -528,7 +528,7 @@ function App() {
  var tok=window.GH.tok(); setGhTok(tok);
  if(tok){
  window.GH.load().then(function(ghLib){
- var lib=ghLib&&ghLib.length?ghLib:loadLibrary();
+ var lib=Array.isArray(ghLib)?ghLib:loadLibrary();
  setLibrary(lib);libraryRef.current=lib;
  }).catch(function(){
  var lib=loadLibrary();setLibrary(lib);libraryRef.current=lib;
