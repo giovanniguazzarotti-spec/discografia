@@ -86,8 +86,7 @@ function saveApiKey(k) { localStorage.setItem(LS_KEY,k); }
 // ── QOBUZ LINK ────────────────────────────────────────────────────────────────
 function toOpenQobuz(url) {
   if(!url) return null;
-  try { const u=new URL(url); const p=u.pathname.split("/").filter(Boolean); const id=p[p.length-1]; return id?`https://open.qobuz.com/album/${id}`:url; }
-  catch{return url;}
+  return url;
 }
 
 // ── EXPORT / IMPORT ───────────────────────────────────────────────────────────
