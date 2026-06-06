@@ -462,7 +462,7 @@ return(<div style={{marginBottom:14}}>
 </div>)}
 </div>);
 }
-function SearchPanel({apiKey,onResults,onNeedKey,searchKey,onSearchStart}) {
+function SearchPanel({apiKey,onResults,onNeedKey,searchKey,onSearchStart,library,onLoadFromLib}) {
  const [composer,setComposer]=useState("");
  const [work,setWork]=useState("");
  const [instrument,setInstrument]=useState("");
@@ -471,6 +471,24 @@ function SearchPanel({apiKey,onResults,onNeedKey,searchKey,onSearchStart}) {
 
  const search=async()=>{
  if(!composer.trim()&&!work.trim())return;
+ if(library&&library.length){
+  var norm=function(s){
+   return(s||"").toLowerCase()
+    .normalize("NFD").replace(/[̀-ͯ]/g,"")
+    .replace(/op\.?\s*\d+/g,function(m){return m.replace(/\D/g,"");})
+    .replace(/n\.?\s*(\d+)/g,"$1")
+    .replace(/[^a-z0-9 ]/g," ")
+    .replace(/\s+/g," ").trim();
+  };
+  var tokens=function(s){return norm(s).split(" ").filter(function(t){return t.length>2;});};
+  var qTokens=tokens(composer+" "+work);
+  var found=library.find(function(e){
+   var eTokens=tokens((e.composer||"")+" "+(e.work||""));
+   var matches=qTokens.filter(function(t){return eTokens.includes(t);});
+   return matches.length>=Math.min(2,qTokens.length);
+  });
+  if(found){onLoadFromLib&&onLoadFromLib(found);setError(null);return;}
+ }
  if(!apiKey){onNeedKey();return;}
  setLoading(true);setError(null);onSearchStart&&onSearchStart();
  var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless Gramophone/BBC/ClassicsToday/Guardian. qobuzUrl se noto. compositionYear=anno.\nJSON: {\"work\":\"Compositore – Opera\",\"compositionYear\":\"x\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"albumTitle\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null}]}";
@@ -614,7 +632,7 @@ function App() {
  </div>
  </div>
  <div style={{maxWidth:880,margin:"0 auto",padding:"22px 24px"}}>
- <SearchPanel apiKey={apiKey} onResults={handleResults} onNeedKey={()=>setShowSetup(true)} searchKey={searchKey} onSearchStart={()=>setSearchKey(function(k){return k+1;})}/>
+ <SearchPanel apiKey={apiKey} onResults={handleResults} onNeedKey={()=>setShowSetup(true)} searchKey={searchKey} onSearchStart={()=>setSearchKey(function(k){return k+1;})} library={library} onLoadFromLib={function(e){setActive(e);setExpanded(null);setSearchKey(function(k){return k+1;});}}/>
  <SourcesPanel/>
  {active&&<div>
  {/* Results header */}
