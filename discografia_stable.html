@@ -182,8 +182,7 @@ function SetupScreen({onSave}) {
  </div>
  ))}
  <div style={{borderTop:`1px solid #1a3a1a`,marginTop:12,paddingTop:12,color:"#4a6a4a",fontSize:11,lineHeight:1.6}}>
- 💰 Costo per ricerca: ~$0.013 (meno di 2 centesimi)<br/>
- 🔒 La chiave è salvata solo sul tuo dispositivo — mai inviata ad altri
+ 💰 ~$0.013/ricerca · 🔒 Chiave salvata solo sul dispositivo
  </div>
  </div>
  </div>
@@ -468,49 +467,41 @@ function SearchPanel({apiKey,onResults,onNeedKey,searchKey,onSearchStart,library
  const [instrument,setInstrument]=useState("");
  const [loading,setLoading]=useState(false);
  const [error,setError]=useState(null);
-
  const search=async()=>{
  if(!composer.trim()&&!work.trim())return;
  if(library&&library.length){
-  var norm=function(s){
-   return(s||"").toLowerCase()
-    .normalize("NFD").replace(/[̀-ͯ]/g,"")
-    .replace(/op\.?\s*\d+/g,function(m){return m.replace(/\D/g,"");})
-    .replace(/n\.?\s*(\d+)/g,"$1")
-    .replace(/[^a-z0-9 ]/g," ")
-    .replace(/\s+/g," ").trim();
-  };
-  var tokens=function(s){return norm(s).split(" ").filter(function(t){return t.length>2;});};
-  var qTokens=tokens(composer+" "+work);
-  var found=library.find(function(e){
-   var eTokens=tokens((e.composer||"")+" "+(e.work||""));
-   var matches=qTokens.filter(function(t){return eTokens.includes(t);});
-   return matches.length>=Math.min(2,qTokens.length);
-  });
-  if(found){onLoadFromLib&&onLoadFromLib(found);setError(null);return;}
+ var norm=function(s){return(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();};var tokens=function(s){return norm(s).split(" ").filter(function(t){return t.length>2;});};var overlap=function(a,b){return a.filter(function(t){return b.includes(t);}).length;};
+ var qComp=tokens(composer); var qWork=tokens(work);
+ var found=library.find(function(e){
+ var eComp=tokens(e.composer||""); var eWork=tokens(e.work||"");
+ var compOk=qComp.length===0||overlap(qComp,eComp)>0;
+ var workOk=qWork.length===0||overlap(qWork,eWork)>=Math.max(1,Math.floor(qWork.length*0.5));
+ return compOk&&workOk&&(qComp.length+qWork.length)>0;
+ });
+ if(found){onLoadFromLib&&onLoadFromLib(found);setError(null);return;}
  }
  if(!apiKey){onNeedKey();return;}
  setLoading(true);setError(null);onSearchStart&&onSearchStart();
  var p="Critico musicale.\nCompositore: "+(composer||"n/d")+"\nOpera: "+(work||"n/d")+"\nStrumento: "+(instrument||"n/d")+"\n4-6 registrazioni Hi-Res/CD lossless Gramophone/BBC/ClassicsToday/Guardian. qobuzUrl se noto. compositionYear=anno.\nJSON: {\"work\":\"Compositore – Opera\",\"compositionYear\":\"x\",\"instrument\":\"x\",\"summary\":\"x\",\"recommendation\":\"x\",\"recordings\":[{\"rank\":1,\"interpreter\":\"x\",\"label\":\"x\",\"year\":\"x\",\"albumTitle\":\"x\",\"execStars\":5,\"recStars\":4,\"consensus\":\"x\",\"consensusIcon\":\"🟢\",\"execNote\":\"x\",\"recNote\":\"x\",\"criticalNote\":\"x\",\"qobuzUrl\":null}]}";
  var tries=0;
  (async function run(){
-  try{
-   var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:4000,messages:[{role:"user",content:p}]})});
-   if(!r.ok){var er=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit.");throw new Error((er.error&&er.error.message)||"Errore "+r.status);}
-   var d=await r.json();var t=(d.content||[]).map(function(b){return b.text||"";}).join("");
-   var cl=t.replace(/```json|```/g,"").trim();var a=cl.indexOf("{"),b=cl.lastIndexOf("}");
-   if(a<0||b<0)throw new Error("Formato non valido.");
-   var jsonStr=cl.slice(a,b+1);
-   try{var parsed=JSON.parse(jsonStr);parsed._composer=composer;onResults(parsed);}
-   catch(e2){
-    if(tries<2){tries++;run();return;}
-    try{var p2=JSON.parse(jsonStr.replace(/,[^,]*$/,"")+"]}");p2._composer=composer;onResults(p2);}
-    catch(e3){setError("Formato non valido. Riprova.");}
-   }
-  }catch(ex){
-   if(tries<2&&ex.message!=="Chiave non valida."&&ex.message!=="Rate limit."){tries++;run();return;}
-   setError(ex.message||"Errore.");
-  }finally{setLoading(false);}
+ try{
+ var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:4000,messages:[{role:"user",content:p}]})});
+ if(!r.ok){var er=await r.json().catch(function(){return{};});if(r.status===401)throw new Error("Chiave non valida.");if(r.status===429)throw new Error("Rate limit.");throw new Error((er.error&&er.error.message)||"Errore "+r.status);}
+ var d=await r.json();var t=(d.content||[]).map(function(b){return b.text||"";}).join("");
+ var cl=t.replace(/```json|```/g,"").trim();var a=cl.indexOf("{"),b=cl.lastIndexOf("}");
+ if(a<0||b<0)throw new Error("Formato non valido.");
+ var jsonStr=cl.slice(a,b+1);
+ try{var parsed=JSON.parse(jsonStr);parsed._composer=composer;onResults(parsed);}
+ catch(e2){
+ if(tries<2){tries++;run();return;}
+ try{var p2=JSON.parse(jsonStr.replace(/,[^,]*$/,"")+"]}");p2._composer=composer;onResults(p2);}
+ catch(e3){setError("Formato non valido. Riprova.");}
+ }
+ }catch(ex){
+ if(tries<2&&ex.message!=="Chiave non valida."&&ex.message!=="Rate limit."){tries++;run();return;}
+ setError(ex.message||"Errore.");
+ }finally{setLoading(false);}
  })();
  }; return (
  <div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:8,padding:18,marginBottom:20}}>
